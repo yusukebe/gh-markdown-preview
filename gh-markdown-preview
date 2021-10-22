@@ -35,7 +35,7 @@ determine_platform() {
 
 download_latest_release() {
   mkdir -p "${tag_path}"
-  gh release -R"${repo}" download "${tag}" --pattern "*${platform}*" --dir="${tag_path}"
+  gh release -R "${repo}" download "${tag}" --pattern "*${platform}*" --dir="${tag_path}"
   mv "${tag_path}/${exe}_${tag}_${platform}${extension}" "${tag_path}/${exe}"
   chmod +x "${tag_path}/${exe}"
 }
