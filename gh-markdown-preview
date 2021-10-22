@@ -1,56 +1,62 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
 repo="yusukebe/gh-markdown-preview"
 tag="v1.0.0"
 
-extensionPath="$(dirname "$0")"
-arch="$(uname -m)"
+extension_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+tag_path="${extension_path}/dist/${tag}"
+exe="gh-markdown-preview"
+platform=""
+extension=""
 
-exe=""
+determine_platform() {
+  local arch
+  arch="$(uname -m)"
+  if uname -a | grep Msys > /dev/null; then
+    extension=".exe"
+    if [ "$arch" == "x86_64" ]; then
+      platform="windows_amd64"
+    fi
+  elif uname -a | grep Darwin > /dev/null; then
+    if [ $arch = "x86_64" ]; then
+      platform="darwin_amd64"
+    elif [ $arch = "arm64" ]; then
+      platform="darwin_arm64"
+    fi
+  elif uname -a | grep Linux > /dev/null; then
+    if [ "$arch" == "x86_64" ]; then
+      platform="linux_amd64"
+    elif [ "$arch" == "arm64" ]; then
+      platform="linux_arm64"
+    fi
+  fi
+}
 
-if uname -a | grep Msys > /dev/null; then
-  if [ $arch = "x86_64" ]; then
-    exe="windows-x86_64-${tag}"
-  elif [ $arch = "i686" ]; then
-    exe="windows-i386-${tag}"
-  elif [ $arch = "i386" ]; then
-    exe="windows-i386-${tag}"
-  fi
-elif uname -a | grep Darwin > /dev/null; then
-  if [ $arch = "x86_64" ]; then
-    exe="darwin-x86_64-${tag}"
-  elif [ $arch = "arm64" ]; then
-    exe="darwin-arm64-${tag}"
-  fi
-elif uname -a | grep Linux > /dev/null; then
-  if [ $arch = "x86_64" ]; then
-    exe="linux-x86_64-${tag}"
-  elif [ $arch = "i686" ]; then
-    exe="linux-i386-${tag}"
-  elif [ $arch = "i386" ]; then
-    exe="linux-i386-${tag}"
+download_latest_release() {
+  mkdir -p "${tag_path}"
+  gh release -R"${repo}" download "${tag}" --pattern "*${platform}*" --dir="${tag_path}"
+  mv "${tag_path}/${exe}_${tag}_${platform}${extension}" "${tag_path}/${exe}"
+  chmod +x "${tag_path}/${exe}"
+}
+
+if [ ! -e "${tag_path}/${exe}" ]; then
+  determine_platform
+
+  if [ "${platform}" == "" ]; then
+    if [ "$(which go)" == "" ]; then
+      echo "go must be installed to use this gh extension on this platform"
+      exit 1
+    fi
+    mkdir -p "${tag_path}"
+    pushd "${extension_path}" > /dev/null
+    go build -o "${tag_path}/${exe}"
+    popd > /dev/null
+  else
+    if [ ! -d "${tag_path}" ]; then
+      download_latest_release
+    fi
   fi
 fi
 
-if [ "${exe}" == "" ]; then
-  if [ "$(which go)" = "" ]; then
-    echo "go must be installed to use this gh extension on this platform"
-    exit 1
-  fi
-
-  exe="cmd.out"
-
-  cd "${extensionPath}" > /dev/null
-  go build -o "${exe}"
-  cd - > /dev/null
-else
-  if [[ ! -x "${extensionPath}/bin/${exe}" ]]; then
-    mkdir -p bin
-    rm -f "${extensionPath}/bin/*"
-    gh release -R"${repo}" download "${tag}" -p "${exe}" --dir="${extensionPath}/bin"
-    chmod +x "${extensionPath}/bin/${exe}"
-  fi
-fi
-
-exec "${extensionPath}/bin/${exe}" "$@"
+exec "${tag_path}/${exe}" "$@"
