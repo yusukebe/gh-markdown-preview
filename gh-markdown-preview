@@ -2,7 +2,7 @@
 set -e
 
 repo="yusukebe/gh-markdown-preview"
-tag="v1.0.0"
+tag="v1.0.1"
 
 extension_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 tag_path="${extension_path}/dist/${tag}"
@@ -42,7 +42,6 @@ download_latest_release() {
 
 if [ ! -e "${tag_path}/${exe}" ]; then
   determine_platform
-
   if [ "${platform}" == "" ]; then
     if [ "$(which go)" == "" ]; then
       echo "go must be installed to use this gh extension on this platform"
