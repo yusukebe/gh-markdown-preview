@@ -1,8 +1,8 @@
 # gh markdown-preview
 
-GitHub CLI extension to preview your markdown similar to the style of GitHub.
+GitHub CLI extension to preview your markdown similar to the style of GitHub :octocat:
 
-**gh markdown-preview** is a GitHub CLI extension to preview your markdown such as **README.md**. The `gh markdown-preview` commnad start a local web server to serve your markdown document file with a GitHub stlye. **gh markdown-preview** show the HTML got from GitHub official markdown API with the CSS extracted from GitHub web site. The styles are almost the same!
+**gh markdown-preview** is a [GitHub CLI](https://cli.github.com) extension to preview your markdown such as **README.md**. The `gh markdown-preview` commnad start a local web server to serve your markdown document file with a GitHub stlye. **gh markdown-preview** show the HTML got from GitHub official markdown API with the CSS extracted from GitHub web site. The styles are almost the same!
 
 ![Screenshot of gh markdown-preview](https://user-images.githubusercontent.com/10682/138411417-dd12a831-bacc-4b05-a33d-47d3f6b45483.png)
 
@@ -32,7 +32,9 @@ Available options:
 
 ## Related projects
 
+- GitHub CLI <https://cli.github.com>
 - Grip <https://github.com/joeyespo/grip>
+- github-markdown-css <https://github.com/sindresorhus/github-markdown-css>
 
 ## Author
 
