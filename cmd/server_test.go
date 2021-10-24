@@ -34,4 +34,5 @@ func TestHandler(t *testing.T) {
 	if r2.Header.Get("Content-Type") != "image/png" {
 		t.Errorf("content type error\n")
 	}
+
 }
