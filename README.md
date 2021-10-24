@@ -12,6 +12,12 @@ GitHub CLI extension to preview your markdown similar to the style of GitHub :oc
 $ gh extension install yusukebe/gh-markdown-preview
 ```
 
+Upgrade:
+
+```
+$ gh extensions upgrade markdown-preview
+```
+
 ## Usage
 
 The usage:
