@@ -7,9 +7,21 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 
 	"github.com/cli/safeexec"
 )
+
+func findReadme(dir string) string {
+	files, _ := ioutil.ReadDir(dir)
+	for _, f := range files {
+		r := regexp.MustCompile(`(?i)^readme`)
+		if r.MatchString(f.Name()) {
+			return f.Name()
+		}
+	}
+	return ""
+}
 
 func toHTML(markdown string) string {
 	sout, _, err := gh("api", "-X", "POST", "/markdown", "-f", fmt.Sprintf("text=%s", markdown))

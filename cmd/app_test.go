@@ -6,6 +6,14 @@ import (
 	"testing"
 )
 
+func TestFindReadme(t *testing.T) {
+	actual := findReadme("../")
+	expected := "README.md"
+	if actual != expected {
+		t.Errorf("got %v\n want %v", actual, expected)
+	}
+}
+
 func TestSlurp(t *testing.T) {
 	string := slurp("../testdata/markdown-demo.md")
 	match := "Headings"
