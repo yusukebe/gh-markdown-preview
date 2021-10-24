@@ -10,15 +10,16 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "gh markdown-preview",
 	Short: "Preview Markdown with gh extension",
-	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
-		filename := args[0]
+		filename := ""
+		if len(args) > 0 {
+			filename = args[0]
+		}
 
 		port, _ := cmd.Flags().GetInt("port")
 		server := Server{port: port}
 		server.Serve(filename)
-		fmt.Println(args[0])
 	},
 }
 

@@ -7,17 +7,35 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 
 	"github.com/cli/safeexec"
 )
+
+func targetFile(filename string) string {
+	if filename == "" {
+		filename = "."
+	}
+	info, err := os.Stat(filename)
+	if err == nil {
+		if info.IsDir() {
+			readme := findReadme(filename)
+			if readme != "" {
+				return readme
+			}
+		}
+	}
+	return filename
+}
 
 func findReadme(dir string) string {
 	files, _ := ioutil.ReadDir(dir)
 	for _, f := range files {
 		r := regexp.MustCompile(`(?i)^readme`)
 		if r.MatchString(f.Name()) {
-			return f.Name()
+			return filepath.Join(dir, f.Name())
+
 		}
 	}
 	return ""

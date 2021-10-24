@@ -30,6 +30,8 @@ func (server *Server) Serve(filename string) {
 	}
 	log.Printf("accepting connections at http://*:%d/\n", port)
 
+	filename = targetFile(filename)
+
 	dir := filepath.Dir(filename)
 	http.Handle("/", handler(filename, http.FileServer(http.Dir(dir))))
 
@@ -40,7 +42,7 @@ func (server *Server) Serve(filename string) {
 
 func handler(filename string, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s [%s] %s", r.RemoteAddr, r.Method, r.URL)
+		log.Printf("%s [%s] %s - %s", r.RemoteAddr, r.Method, r.URL, filename)
 
 		if r.URL.Path != "/" {
 			h.ServeHTTP(w, r)
