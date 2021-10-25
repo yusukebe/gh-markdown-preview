@@ -22,6 +22,37 @@
     </style>
   </head>
   <body>
-    <article class="markdown-body">{{.Body}}</article>
+    <script
+      type="text/javascript"
+      src="https://code.jquery.com/jquery-3.6.0.min.js"
+    ></script>
+    <script type="text/javascript">
+      function loadmd() {
+        $.ajax({
+          url: "/md",
+          success: function (result) {
+            $("#markdown-body").html(result)
+          },
+        })
+      }
+      ;(function () {
+        var reload = false
+        {{if .Reload}} reload = true {{end}}
+        if (reload) {
+          var conn = new WebSocket("ws://{{.Host}}/ws")
+          conn.onclose = function (e) {
+            console.log("Connection closed")
+          }
+          conn.onmessage = function (e) {
+            if (e.data === "reload") {
+              console.log("reload page!")
+              loadmd()
+            }
+          }
+        }
+        loadmd()
+      })()
+    </script>
+    <article id="markdown-body" class="markdown-body"></article>
   </body>
 </html>
