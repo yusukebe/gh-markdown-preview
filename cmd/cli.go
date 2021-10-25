@@ -19,7 +19,9 @@ var rootCmd = &cobra.Command{
 
 		port, _ := cmd.Flags().GetInt("port")
 		server := Server{port: port}
+
 		server.Serve(filename)
+
 	},
 }
 
