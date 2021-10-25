@@ -57,7 +57,7 @@ func wsWriter(ws *websocket.Conn, filename string) {
 				return
 			}
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				log.Println("Modified file:", event.Name)
+				log.Printf("Change detected in %s, refreshing", event.Name)
 				err := ws.WriteMessage(websocket.TextMessage, []byte("reload"))
 				if err != nil {
 					log.Fatalf("error:%v", err)

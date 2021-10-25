@@ -20,7 +20,8 @@ var rootCmd = &cobra.Command{
 		port, _ := cmd.Flags().GetInt("port")
 		server := Server{port: port}
 
-		server.Serve(filename)
+		reload, _ := cmd.Flags().GetBool("reload")
+		server.Serve(filename, reload)
 
 	},
 }
@@ -34,4 +35,5 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().IntP("port", "p", 3333, "TCP port number of this server")
+	rootCmd.Flags().BoolP("reload", "r", false, "Enable live reload")
 }

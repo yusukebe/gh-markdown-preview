@@ -10,8 +10,9 @@ import (
 )
 
 type TemplateParam struct {
-	Body string
-	Host string
+	Body   string
+	Host   string
+	Reload bool
 }
 
 type Server struct {
@@ -24,26 +25,26 @@ var htmlTemplate string
 
 const defaultPort = 3333
 
-func (server *Server) Serve(filename string) {
+func (server *Server) Serve(filename string, reload bool) {
 	port := defaultPort
 	if server.port > 0 {
 		port = server.port
 	}
-	log.Printf("accepting connections at http://*:%d/\n", port)
+	log.Printf("Accepting connections at http://*:%d/\n", port)
 
 	filename = targetFile(filename)
 
 	dir := filepath.Dir(filename)
 	http.Handle("/md", mdHandler(filename))
 	http.Handle("/ws", wsHandler(filename))
-	http.Handle("/", handler(filename, http.FileServer(http.Dir(dir))))
+	http.Handle("/", handler(filename, reload, http.FileServer(http.Dir(dir))))
 
 	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
 }
 
-func handler(filename string, h http.Handler) http.Handler {
+func handler(filename string, reload bool, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s [%s] %s", r.RemoteAddr, r.Method, r.URL)
 
@@ -63,7 +64,7 @@ func handler(filename string, h http.Handler) http.Handler {
 
 		markdown := slurp(filename)
 		html := toHTML(markdown)
-		param := TemplateParam{Body: html, Host: r.Host}
+		param := TemplateParam{Body: html, Host: r.Host, Reload: reload}
 
 		if err := tmpl.Execute(w, param); err != nil {
 			log.Fatalf("error:%v", err)

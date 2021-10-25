@@ -10,7 +10,7 @@ import (
 func TestHandler(t *testing.T) {
 	filename := "../testdata/markdown-demo.md"
 	dir := filepath.Dir(filename)
-	ts := httptest.NewServer(handler(filename, http.FileServer(http.Dir(dir))))
+	ts := httptest.NewServer(handler(filename, false, http.FileServer(http.Dir(dir))))
 	defer ts.Close()
 
 	res, err := http.Get(ts.URL)
