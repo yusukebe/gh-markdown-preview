@@ -36,3 +36,20 @@ func TestHandler(t *testing.T) {
 	}
 
 }
+
+func TestMdHandler(t *testing.T) {
+	filename := "../testdata/markdown-demo.md"
+	ts := httptest.NewServer(mdHandler(filename))
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL)
+	if err != nil {
+		t.Fatalf("unexpected: %v\n", err)
+	}
+	if res.StatusCode != 200 {
+		t.Errorf("server status error, got: %v", res.StatusCode)
+	}
+	if res.Header.Get("Content-Type") != "text/html; charset=utf-8" {
+		t.Errorf("content type error, got: %s\n", res.Header.Get("Content-Type"))
+	}
+}

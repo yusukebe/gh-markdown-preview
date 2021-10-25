@@ -38,14 +38,14 @@ func wsReader(ws *websocket.Conn) {
 }
 
 func wsWriter(ws *websocket.Conn, filename string) {
-	defer ws.Close()
+	//defer ws.Close()
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatalf("error:%v", err)
 	}
-	err = watcher.Add(filename)
 
+	err = watcher.Add(filename)
 	if err != nil {
 		log.Fatalf("error:%v", err)
 	}
@@ -58,10 +58,10 @@ func wsWriter(ws *websocket.Conn, filename string) {
 			}
 			if event.Op&fsnotify.Write == fsnotify.Write {
 				log.Println("Modified file:", event.Name)
-				if err := ws.WriteMessage(websocket.TextMessage, []byte("reload")); err == nil {
-					return
+				err := ws.WriteMessage(websocket.TextMessage, []byte("reload"))
+				if err != nil {
+					log.Fatalf("error:%v", err)
 				}
-				log.Fatalf("error:%v", err)
 			}
 		case err, ok := <-watcher.Errors:
 			if !ok {
