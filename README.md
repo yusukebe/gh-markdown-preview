@@ -15,7 +15,7 @@ $ gh extension install yusukebe/gh-markdown-preview
 Upgrade:
 
 ```
-$ gh extensions upgrade markdown-preview
+$ gh extension upgrade markdown-preview
 ```
 
 ## Usage
