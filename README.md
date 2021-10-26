@@ -43,7 +43,7 @@ The usage:
 $ gh markdown-preview README.md
 ```
 
-Or this command will detect README file in the directory autocally.
+Or this command will detect README file in the directory automatically.
 
 ```
 $ gh markdown-preview
