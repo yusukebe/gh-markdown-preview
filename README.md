@@ -8,7 +8,7 @@ You can see rendered README before uploading to GitHub!
 
 ## Features
 
-- **NO-dependencies** - You need `gh` command only.
+- **No-dependencies** - You need `gh` command only.
 - **Zero-configuration** - You don't have to set the GitHub access token.
 - **Looks exactly the same** - You can see same as GitHub.
 - **Live reloading** - You don't need reload the browser.
