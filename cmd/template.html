@@ -29,7 +29,7 @@
     <script type="text/javascript">
       function loadmd() {
         $.ajax({
-          url: "/md",
+          url: "/__/md",
           success: function (result) {
             $("#markdown-body").html(result).promise().done(function(){
               var count = $("#markdown-body a").length;

@@ -35,7 +35,7 @@ func (server *Server) Serve(filename string, reload bool) {
 	dir := filepath.Dir(filename)
 
 	r := http.NewServeMux()
-	r.Handle("/md", wrapHandler(mdHandler(filename)))
+	r.Handle("/__/md", wrapHandler(mdHandler(filename)))
 	r.Handle("/ws", wsHandler(filename))
 	rootHandler := handler(filename, reload, http.FileServer(http.Dir(dir)))
 	r.Handle("/", wrapHandler(rootHandler))
