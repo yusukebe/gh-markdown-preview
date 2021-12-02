@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var verbose = false
+
 var rootCmd = &cobra.Command{
 	Use:   "gh markdown-preview",
 	Short: "GitHub CLI extension to preview Markdown",
@@ -16,6 +18,8 @@ var rootCmd = &cobra.Command{
 		if len(args) > 0 {
 			filename = args[0]
 		}
+
+		verbose, _ = cmd.Flags().GetBool("verbose")
 
 		port, _ := cmd.Flags().GetInt("port")
 		server := Server{port: port}
@@ -36,4 +40,5 @@ func Execute() {
 func init() {
 	rootCmd.Flags().IntP("port", "p", 3333, "TCP port number of this server")
 	rootCmd.Flags().BoolP("reload", "r", false, "Enable live reloading")
+	rootCmd.Flags().BoolP("verbose", "", false, "Show verbose output")
 }

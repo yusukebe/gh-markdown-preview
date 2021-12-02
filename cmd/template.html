@@ -55,8 +55,14 @@
         {{if .Reload}} reload = true {{end}}
         if (reload) {
           var conn = new WebSocket("ws://{{.Host}}/ws")
+          conn.onopen = function () {
+              conn.send('Ping');
+          };
+          conn.onerror = function (e) {
+            console.log("Connection error " + e);
+          };
           conn.onclose = function (e) {
-            console.log("Connection closed")
+            console.log("Connection closed " + e)
           }
           conn.onmessage = function (e) {
             if (e.data === "reload") {
