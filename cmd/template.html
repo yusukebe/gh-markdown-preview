@@ -31,11 +31,26 @@
         $.ajax({
           url: "/md",
           success: function (result) {
-            $("#markdown-body").html(result)
-          },
+            $("#markdown-body").html(result).promise().done(function(){
+              var count = $("#markdown-body a").length;
+              $("#markdown-body a").each(function(i){
+              var a = $(this);
+              if (a.attr("id") != undefined ) {
+                var id = a.attr("id").replace("user-content-", "");
+                a.attr("id", id);
+              }
+              if (i+1 === count) {
+                if(location.hash) {
+                  var url = location.href;
+                  location.href = location.hash;
+                  history.replaceState(null,null,url);
+                }
+              }
+            })
+          })}
         })
-      }
-      ;(function () {
+      };
+      (function () {
         var reload = false
         {{if .Reload}} reload = true {{end}}
         if (reload) {
