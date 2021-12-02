@@ -44,7 +44,7 @@ func findReadme(dir string) string {
 func toHTML(markdown string) string {
 	sout, _, err := gh("api", "-X", "POST", "/markdown", "-f", fmt.Sprintf("text=%s", markdown))
 	if err != nil {
-		log.Fatalf("error:%v", err)
+		log.Fatalf("Error:%v", err)
 	}
 	return sout.String()
 }
@@ -55,7 +55,7 @@ func slurp(fileName string) string {
 		log.Fatalf("error:%v", err)
 	}
 	defer f.Close()
-	b, err := ioutil.ReadAll(f)
+	b, _ := ioutil.ReadAll(f)
 	text := string(b)
 	return text
 }
@@ -78,4 +78,14 @@ func gh(args ...string) (sout, eout bytes.Buffer, err error) {
 	}
 
 	return
+}
+
+func logInfo(format string, v ...interface{}) {
+	log.Printf(format, v...)
+}
+
+func logDebug(format string, v ...interface{}) {
+	if verbose {
+		log.Printf(format, v...)
+	}
 }

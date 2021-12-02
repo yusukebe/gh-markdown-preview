@@ -1,6 +1,6 @@
 # gh markdown-preview
 
-GitHub CLI extension to preview your markdown similar to the style of GitHub :octocat:
+GitHub CLI extension to preview Markdown similar to the style of GitHub :octocat:
 
 **gh markdown-preview** is a [GitHub CLI](https://cli.github.com) extension to preview your markdown such as **README.md**. The `gh markdown-preview` command start a local web server to serve your markdown document file with a GitHub style. **gh markdown-preview** show the HTML got from GitHub official markdown API with the CSS extracted from GitHub web site. The styles are almost the same!
 
@@ -54,8 +54,10 @@ Then access the local web server such as `http://localhost:3333` with Chrome, Fi
 Available options:
 
 ```text
--p, --port     TCP port number of this server (default: 3333)
--r, --reload   Enable live reloading (default: false)
+  -h, --help       help for gh
+  -p, --port int   TCP port number of this server (default 3333)
+  -r, --reload     Enable live reloading
+      --verbose    Show verbose output
 ```
 
 ![gh markdown-preview command](https://user-images.githubusercontent.com/10682/138411333-c1b5ccb9-d56a-478c-9f20-4c71cfe1536a.png)

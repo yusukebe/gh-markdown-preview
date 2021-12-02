@@ -19,6 +19,11 @@ type Server struct {
 	port int
 }
 
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
 //go:embed template.html
 var htmlTemplate string
 
@@ -29,7 +34,6 @@ func (server *Server) Serve(filename string, reload bool) {
 	if server.port > 0 {
 		port = server.port
 	}
-	log.Printf("Accepting connections at http://*:%d/\n", port)
 
 	filename = targetFile(filename)
 	dir := filepath.Dir(filename)
@@ -40,9 +44,10 @@ func (server *Server) Serve(filename string, reload bool) {
 	rootHandler := handler(filename, reload, http.FileServer(http.Dir(dir)))
 	r.Handle("/", wrapHandler(rootHandler))
 
+	logInfo("Accepting connections at http://*:%d/\n", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), r)
 	if err != nil {
-		log.Fatal("ListenAndServe:", err)
+		log.Fatalf("ListenAndServe: %v", err)
 	}
 }
 
@@ -57,7 +62,7 @@ func handler(filename string, reload bool, h http.Handler) http.Handler {
 
 		tmpl, err := template.New("HTML Template").Parse(htmlTemplate)
 		if err != nil {
-			log.Printf("error:%v", err)
+			logInfo("error:%v", err)
 			http.NotFound(w, r)
 			return
 		}
@@ -73,11 +78,31 @@ func handler(filename string, reload bool, h http.Handler) http.Handler {
 }
 
 func mdHandler(filename string) http.Handler {
+	logInfo("Watching %s for changes", filename)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		markdown := slurp(filename)
 		html := toHTML(markdown)
 
 		fmt.Fprintf(w, "%s", html)
+	})
+}
+
+func NewLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
+	return &loggingResponseWriter{w, http.StatusOK}
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
+func wrapHandler(wrappedHandler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		lrw := NewLoggingResponseWriter(w)
+		wrappedHandler.ServeHTTP(lrw, r)
+
+		statusCode := lrw.statusCode
+		logInfo("%s [%d] %s", r.Method, statusCode, r.URL)
 	})
 }
