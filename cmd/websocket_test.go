@@ -23,6 +23,9 @@ func TestWriter(t *testing.T) {
 
 	u := "ws" + strings.TrimPrefix(s.URL, "http")
 	ws, _, err := websocket.DefaultDialer.Dial(u, nil)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 	<-time.After(50 * time.Millisecond) //XXX
 
 	defer ws.Close()
