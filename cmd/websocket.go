@@ -59,6 +59,8 @@ func wsWriter(ws *websocket.Conn, filename string) {
 		ticker.Stop()
 	}()
 
+	logInfo("Watching %s for changes", filename)
+
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatalf("Error:%v", err)

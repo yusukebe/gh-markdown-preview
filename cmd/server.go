@@ -78,7 +78,6 @@ func handler(filename string, reload bool, h http.Handler) http.Handler {
 }
 
 func mdHandler(filename string) http.Handler {
-	logInfo("Watching %s for changes", filename)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		markdown := slurp(filename)
