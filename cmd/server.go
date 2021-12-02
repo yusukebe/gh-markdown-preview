@@ -16,8 +16,7 @@ type TemplateParam struct {
 }
 
 type Server struct {
-	port     int
-	template string
+	port int
 }
 
 //go:embed template.html
@@ -33,21 +32,22 @@ func (server *Server) Serve(filename string, reload bool) {
 	log.Printf("Accepting connections at http://*:%d/\n", port)
 
 	filename = targetFile(filename)
-
 	dir := filepath.Dir(filename)
-	http.Handle("/md", mdHandler(filename))
-	http.Handle("/ws", wsHandler(filename))
-	http.Handle("/", handler(filename, reload, http.FileServer(http.Dir(dir))))
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+	r := http.NewServeMux()
+	r.Handle("/md", wrapHandler(mdHandler(filename)))
+	r.Handle("/ws", wsHandler(filename))
+	rootHandler := handler(filename, reload, http.FileServer(http.Dir(dir)))
+	r.Handle("/", wrapHandler(rootHandler))
+
+	err := http.ListenAndServe(fmt.Sprintf(":%d", port), r)
+	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
 }
 
 func handler(filename string, reload bool, h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s [%s] %s", r.RemoteAddr, r.Method, r.URL)
-
 		if r.URL.Path != "/" {
 			h.ServeHTTP(w, r)
 			return
@@ -74,12 +74,10 @@ func handler(filename string, reload bool, h http.Handler) http.Handler {
 
 func mdHandler(filename string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s [%s] %s", r.RemoteAddr, r.Method, r.URL)
-
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		markdown := slurp(filename)
 		html := toHTML(markdown)
 
-		fmt.Fprintf(w, html)
+		fmt.Fprintf(w, "%s", html)
 	})
 }
