@@ -54,10 +54,12 @@ Then access the local web server such as `http://localhost:3333` with Chrome, Fi
 Available options:
 
 ```text
-  -h, --help       help for gh
-  -p, --port int   TCP port number of this server (default 3333)
-  -r, --reload     Enable live reloading
-      --verbose    Show verbose output
+      --dark-mode    Force dark mode
+  -h, --help         help for gh
+      --light-mode   Force light mode
+  -p, --port int     TCP port number of this server (default 3333)
+  -r, --reload       Enable live reloading
+      --verbose      Show verbose output
 ```
 
 ![gh markdown-preview command](https://user-images.githubusercontent.com/10682/138411333-c1b5ccb9-d56a-478c-9f20-4c71cfe1536a.png)
