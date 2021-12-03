@@ -9,6 +9,13 @@ import (
 
 var verbose = false
 
+type Param struct {
+	filename       string
+	reload         bool
+	forceLightMode bool
+	forceDarkMode  bool
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "gh markdown-preview",
 	Short: "GitHub CLI extension to preview Markdown",
@@ -25,8 +32,17 @@ var rootCmd = &cobra.Command{
 		server := Server{port: port}
 
 		reload, _ := cmd.Flags().GetBool("reload")
-		server.Serve(filename, reload)
+		forceLightMode, _ := cmd.Flags().GetBool("light-mode")
+		forceDarkMode, _ := cmd.Flags().GetBool("dark-mode")
 
+		param := &Param{
+			filename:       filename,
+			reload:         reload,
+			forceLightMode: forceLightMode,
+			forceDarkMode:  forceDarkMode,
+		}
+
+		server.Serve(param)
 	},
 }
 
@@ -41,4 +57,6 @@ func init() {
 	rootCmd.Flags().IntP("port", "p", 3333, "TCP port number of this server")
 	rootCmd.Flags().BoolP("reload", "r", false, "Enable live reloading")
 	rootCmd.Flags().BoolP("verbose", "", false, "Show verbose output")
+	rootCmd.Flags().BoolP("light-mode", "", false, "Force light mode")
+	rootCmd.Flags().BoolP("dark-mode", "", false, "Force dark mode")
 }
