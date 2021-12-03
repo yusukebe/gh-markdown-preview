@@ -1,17 +1,29 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.0.0/github-markdown.min.css"
-    />
+    {{ $cssURL :=
+    "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.0.0/github-markdown.min.css"
+    }} {{ if eq .Mode "dark" }} {{ $cssURL =
+    "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.0.0/github-markdown-dark.min.css"
+    }} {{ else if eq .Mode "light" }} {{ $cssURL =
+    "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.0.0/github-markdown-light.min.css"
+    }}{{ end }}
+    <link rel="stylesheet" href="{{ $cssURL }}" />
     <style>
+      {{ if eq .Mode "dark" }}
+      body {
+          background-color: #0d1117;
+          color: #c9d1d9;
+        }
+      {{ else if eq .Mode "light" }}
+      {{ else }}
       @media (prefers-color-scheme: dark) {
         body {
           background-color: #0d1117;
           color: #c9d1d9;
         }
       }
+      {{ end }}
       .markdown-body {
         box-sizing: border-box;
         min-width: 200px;

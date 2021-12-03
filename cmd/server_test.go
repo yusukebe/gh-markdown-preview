@@ -11,7 +11,10 @@ import (
 func TestHandler(t *testing.T) {
 	filename := "../testdata/markdown-demo.md"
 	dir := filepath.Dir(filename)
-	ts := httptest.NewServer(handler(filename, false, http.FileServer(http.Dir(dir))))
+	param := &Param{
+		reload: false,
+	}
+	ts := httptest.NewServer(handler(filename, param, http.FileServer(http.Dir(dir))))
 	defer ts.Close()
 
 	res, err := http.Get(ts.URL)
@@ -81,5 +84,24 @@ func TestWrapHandler(t *testing.T) {
 	if res.StatusCode != 200 {
 		t.Errorf("server status error, got: %v", res.StatusCode)
 	}
+}
 
+func TestGetModeString(t *testing.T) {
+	modeString := getModeString(true, false)
+	expected := "light"
+	if modeString != expected {
+		t.Errorf("mode string is not: %s", modeString)
+	}
+
+	modeString = getModeString(true, false)
+	expected = "light"
+	if modeString != expected {
+		t.Errorf("mode string is not: %s", modeString)
+	}
+
+	modeString = getModeString(false, false)
+	expected = ""
+	if modeString != expected {
+		t.Errorf("mode string is not: %s", modeString)
+	}
 }
