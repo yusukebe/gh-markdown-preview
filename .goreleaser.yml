@@ -1,7 +1,7 @@
 builds:
   - env:
       - CGO_ENABLED=0
-    ldflags: --ldflags "-X github.com/yusukebe/gh-markdown-preview/cmd.Version=$(git describe --tag --abbrev=0)"
+    ldflags: -s -w -X github.com/yusukebe/gh-markdown-preview/cmd.Version={{.Tag}}
     goos:
       - linux
       - windows
