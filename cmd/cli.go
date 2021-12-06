@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Version string
+
 var verbose = false
 
 type Param struct {
@@ -20,6 +22,13 @@ var rootCmd = &cobra.Command{
 	Use:   "gh markdown-preview",
 	Short: "GitHub CLI extension to preview Markdown",
 	Run: func(cmd *cobra.Command, args []string) {
+
+		fmt.Println(Version)
+		showVerionFlag, _ := cmd.Flags().GetBool("version")
+		if showVerionFlag {
+			showVersion()
+			os.Exit(0)
+		}
 
 		filename := ""
 		if len(args) > 0 {
@@ -55,8 +64,13 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().IntP("port", "p", 3333, "TCP port number of this server")
+	rootCmd.Flags().BoolP("version", "", false, "Show the version")
 	rootCmd.Flags().BoolP("reload", "r", false, "Enable live reloading")
 	rootCmd.Flags().BoolP("verbose", "", false, "Show verbose output")
 	rootCmd.Flags().BoolP("light-mode", "", false, "Force light mode")
 	rootCmd.Flags().BoolP("dark-mode", "", false, "Force dark mode")
+}
+
+func showVersion() {
+	fmt.Printf("gh-markdown-preview version %s\n", Version)
 }
