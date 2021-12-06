@@ -23,7 +23,6 @@ var rootCmd = &cobra.Command{
 	Short: "GitHub CLI extension to preview Markdown",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		fmt.Println(Version)
 		showVerionFlag, _ := cmd.Flags().GetBool("version")
 		if showVerionFlag {
 			showVersion()
