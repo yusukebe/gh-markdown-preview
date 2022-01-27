@@ -12,6 +12,8 @@ You can see rendered README before uploading to GitHub!
 - **Zero-configuration** - You don't have to set the GitHub access token.
 - **Looks exactly the same** - You can see same as GitHub.
 - **Live reloading** - You don't need reload the browser.
+- **Auto open browser** - Your browser will be opened automatically.
+- **Auto find port** - You don't need find an available port if default is used.
 
 ## Screenshots
 
