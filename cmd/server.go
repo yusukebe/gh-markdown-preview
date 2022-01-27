@@ -46,6 +46,12 @@ func (server *Server) Serve(param *Param) {
 	r.Handle("/", wrapHandler(rootHandler))
 
 	logInfo("Accepting connections at http://*:%d/\n", port)
+
+	if param.autoOpen {
+		logInfo("Open http://*:%d/ on your browser\n", port)
+		go openBrowser(port)
+	}
+
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), r)
 	if err != nil {
 		log.Fatalf("ListenAndServe: %v", err)
