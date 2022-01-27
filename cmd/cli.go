@@ -16,10 +16,11 @@ type Param struct {
 	reload         bool
 	forceLightMode bool
 	forceDarkMode  bool
+	autoOpen       bool
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "gh markdown-preview",
+	Use:   "gh-markdown-preview",
 	Short: "GitHub CLI extension to preview Markdown",
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -48,11 +49,18 @@ var rootCmd = &cobra.Command{
 		forceLightMode, _ := cmd.Flags().GetBool("light-mode")
 		forceDarkMode, _ := cmd.Flags().GetBool("dark-mode")
 
+		disableAutoOpen, _ := cmd.Flags().GetBool("disable-auto-open")
+		autoOpen := true
+		if disableAutoOpen {
+			autoOpen = false
+		}
+
 		param := &Param{
 			filename:       filename,
 			reload:         reload,
 			forceLightMode: forceLightMode,
 			forceDarkMode:  forceDarkMode,
+			autoOpen:       autoOpen,
 		}
 
 		server.Serve(param)
@@ -70,6 +78,7 @@ func init() {
 	rootCmd.Flags().IntP("port", "p", 3333, "TCP port number of this server")
 	rootCmd.Flags().BoolP("version", "", false, "Show the version")
 	rootCmd.Flags().BoolP("disable-reload", "", false, "Disable live reloading")
+	rootCmd.Flags().BoolP("disable-auto-open", "", false, "Disable auto opening your browser")
 	rootCmd.Flags().BoolP("verbose", "", false, "Show verbose output")
 	rootCmd.Flags().BoolP("light-mode", "", false, "Force light mode")
 	rootCmd.Flags().BoolP("dark-mode", "", false, "Force dark mode")
