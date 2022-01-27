@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"path/filepath"
 	"text/template"
@@ -44,6 +45,8 @@ func (server *Server) Serve(param *Param) {
 	r.Handle("/ws", wsHandler(filename))
 	rootHandler := handler(filename, param, http.FileServer(http.Dir(dir)))
 	r.Handle("/", wrapHandler(rootHandler))
+
+	port = getPort(port)
 
 	logInfo("Accepting connections at http://*:%d/\n", port)
 
@@ -123,4 +126,18 @@ func getModeString(lightMode, darkMode bool) string {
 		return "dark"
 	}
 	return ""
+}
+
+func getPort(port int) int {
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		logInfo("http://*:%d/ is already used\n", port)
+		listener, err = net.Listen("tcp", ":0")
+		if err != nil {
+			log.Fatalf("Can not find an available port: %v", err)
+		}
+	}
+	port = listener.Addr().(*net.TCPAddr).Port
+	listener.Close()
+	return port
 }
