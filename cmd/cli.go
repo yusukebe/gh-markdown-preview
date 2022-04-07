@@ -37,8 +37,10 @@ var rootCmd = &cobra.Command{
 
 		verbose, _ = cmd.Flags().GetBool("verbose")
 
+		host, _ := cmd.Flags().GetString("host")
 		port, _ := cmd.Flags().GetInt("port")
-		server := Server{port: port}
+
+		server := Server{host: host, port: port}
 
 		disableReload, _ := cmd.Flags().GetBool("disable-reload")
 		reload := true
@@ -76,6 +78,7 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().IntP("port", "p", 3333, "TCP port number of this server")
+	rootCmd.Flags().StringP("host", "", "localhost", "Hostname this server will bind")
 	rootCmd.Flags().BoolP("version", "", false, "Show the version")
 	rootCmd.Flags().BoolP("disable-reload", "", false, "Disable live reloading")
 	rootCmd.Flags().BoolP("disable-auto-open", "", false, "Disable auto opening your browser")
