@@ -60,13 +60,12 @@ Available options:
     --disable-auto-open   Disable auto opening your browser
     --disable-reload      Disable live reloading
 -h, --help                help for gh-markdown-preview
+    --host string         Hostname this server will bind (default "localhost")
     --light-mode          Force light mode
 -p, --port int            TCP port number of this server (default 3333)
     --verbose             Show verbose output
     --version             Show the version
 ```
-
-![gh markdown-preview command](https://user-images.githubusercontent.com/10682/138411333-c1b5ccb9-d56a-478c-9f20-4c71cfe1536a.png)
 
 ## Related projects
 

@@ -18,6 +18,7 @@ type TemplateParam struct {
 }
 
 type Server struct {
+	host string
 	port int
 }
 
@@ -32,6 +33,7 @@ var htmlTemplate string
 const defaultPort = 3333
 
 func (server *Server) Serve(param *Param) {
+	host := server.host
 	port := defaultPort
 	if server.port > 0 {
 		port = server.port
@@ -46,16 +48,17 @@ func (server *Server) Serve(param *Param) {
 	rootHandler := handler(filename, param, http.FileServer(http.Dir(dir)))
 	r.Handle("/", wrapHandler(rootHandler))
 
-	port = getPort(port)
+	port = getPort(host, port)
+	address := fmt.Sprintf("%s:%d", host, port)
 
-	logInfo("Accepting connections at http://*:%d/\n", port)
+	logInfo("Accepting connections at http://%s/\n", address)
 
 	if param.autoOpen {
-		logInfo("Open http://*:%d/ on your browser\n", port)
-		go openBrowser(port)
+		logInfo("Open http://%s/ on your browser\n", address)
+		go openBrowser(fmt.Sprintf("http://%s/", address))
 	}
 
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), r)
+	err := http.ListenAndServe(address, r)
 	if err != nil {
 		log.Fatalf("ListenAndServe: %v", err)
 	}
@@ -128,13 +131,13 @@ func getModeString(lightMode, darkMode bool) string {
 	return ""
 }
 
-func getPort(port int) int {
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+func getPort(host string, port int) int {
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
-		logInfo("http://*:%d/ is already used\n", port)
-		listener, err = net.Listen("tcp", ":0")
+		logInfo(err.Error())
+		listener, err = net.Listen("tcp", fmt.Sprintf("%s:0", host))
 		if err != nil {
-			log.Fatalf("Can not find an available port: %v", err)
+			log.Fatalf(err.Error())
 		}
 	}
 	port = listener.Addr().(*net.TCPAddr).Port

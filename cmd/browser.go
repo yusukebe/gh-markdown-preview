@@ -1,15 +1,13 @@
 package cmd
 
 import (
-	"fmt"
 	"os/exec"
 	"runtime"
 	"time"
 )
 
-func openBrowser(port int) error {
+func openBrowser(url string) error {
 	<-time.After(100 * time.Millisecond)
-	url := fmt.Sprintf("http://localhost:%d/", port)
 	var args []string
 	var cmd string
 	switch runtime.GOOS {
