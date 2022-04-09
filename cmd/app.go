@@ -52,7 +52,8 @@ func toHTML(markdown string) string {
 func slurp(fileName string) string {
 	f, err := os.Open(fileName)
 	if err != nil {
-		log.Fatalf("error:%v", err)
+		logInfo("Warn: %v", err)
+		return ""
 	}
 	defer f.Close()
 	b, _ := ioutil.ReadAll(f)

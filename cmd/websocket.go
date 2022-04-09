@@ -3,6 +3,7 @@ package cmd
 import (
 	"log"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -19,7 +20,7 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 )
 
-func wsHandler(filename string) http.Handler {
+func wsHandler(dir string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ws, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -31,7 +32,7 @@ func wsHandler(filename string) http.Handler {
 
 		defer ws.Close()
 
-		go wsWriter(ws, filename)
+		go wsWriter(ws, dir)
 
 		wsReader(ws)
 	})
@@ -51,22 +52,21 @@ func wsReader(ws *websocket.Conn) {
 	}
 }
 
-func wsWriter(ws *websocket.Conn, filename string) {
-
+func wsWriter(ws *websocket.Conn, dir string) {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ws.Close()
 		ticker.Stop()
 	}()
 
-	logInfo("Watching %s for changes", filename)
+	logInfo("Watching %s for changes", dir)
 
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatalf("Error:%v", err)
 	}
 
-	err = watcher.Add(filename)
+	err = watcher.Add(dir)
 	if err != nil {
 		log.Fatalf("Error:%v", err)
 	}
@@ -75,10 +75,16 @@ func wsWriter(ws *websocket.Conn, filename string) {
 		select {
 		case event, ok := <-watcher.Events:
 			if !ok {
-				return
+				logDebug("%v", event.Name)
+				break
 			}
+			if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
+				r := regexp.MustCompile(`\.swp$|~$`)
+				if r.MatchString(event.Name) {
+					logInfo("Info: %s", event.Name)
+					break
+				}
 
-			if event.Op&fsnotify.Write == fsnotify.Write {
 				logInfo("Change detected in %s, refreshing", event.Name)
 				err := ws.WriteMessage(websocket.TextMessage, []byte("reload"))
 				if err != nil {
