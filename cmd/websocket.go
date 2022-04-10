@@ -10,62 +10,26 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	pongWait      = 60 * time.Second
+	pingPeriod    = (pongWait * 9) / 10
+	ignorePattern = `\.swp$|~$|^\.DS_Store$|^4913$`
+)
+
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 }
 
-const (
-	pongWait   = 60 * time.Second
-	pingPeriod = (pongWait * 9) / 10
-)
+var reload chan bool
+var socket *websocket.Conn
 
-func wsHandler(dir string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ws, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			if _, ok := err.(websocket.HandshakeError); !ok {
-				logDebug("Info: %s\n", err)
-			}
-			return
-		}
-
-		defer ws.Close()
-
-		go wsWriter(ws, dir)
-
-		wsReader(ws)
-	})
-}
-
-func wsReader(ws *websocket.Conn) {
-	defer ws.Close()
-
-	ws.SetReadDeadline(time.Now().Add(pongWait))
-	ws.SetPongHandler(func(string) error { ws.SetReadDeadline(time.Now().Add(pongWait)); return nil })
-	for {
-		_, _, err := ws.ReadMessage()
-		if err != nil {
-			logDebug("Info: %s\n", err)
-			break
-		}
-	}
-}
-
-func wsWriter(ws *websocket.Conn, dir string) {
-	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		ws.Close()
-		ticker.Stop()
-	}()
-
-	logInfo("Watching %s for changes", dir)
-
+func watch(dir string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatalf("Error:%v", err)
 	}
-
+	logInfo("Watching %s/ for changes", dir)
 	err = watcher.Add(dir)
 	if err != nil {
 		log.Fatalf("Error:%v", err)
@@ -73,34 +37,75 @@ func wsWriter(ws *websocket.Conn, dir string) {
 
 	for {
 		select {
-		case event, ok := <-watcher.Events:
-			if !ok {
-				logDebug("%v", event.Name)
-				break
-			}
+		case event := <-watcher.Events:
 			if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
-				r := regexp.MustCompile(`\.swp$|~$`)
+				r := regexp.MustCompile(ignorePattern)
 				if r.MatchString(event.Name) {
-					logInfo("Info: %s", event.Name)
+					logDebug("Debug [ignore]: `%s`", event.Name)
 					break
 				}
-
 				logInfo("Change detected in %s, refreshing", event.Name)
-				err := ws.WriteMessage(websocket.TextMessage, []byte("reload"))
-				if err != nil {
-					logDebug("Info: %v", err)
-				}
+				reload <- true
 			}
-		case err, ok := <-watcher.Errors:
-			if !ok {
+		case err := <-watcher.Errors:
+			log.Fatalf("Error:%v", err)
+		}
+	}
+}
+
+func wsHandler(dir string) http.Handler {
+	go watch(dir)
+	reload = make(chan bool, 1)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var err error
+		socket, err = upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			if _, ok := err.(websocket.HandshakeError); !ok {
+				logDebug("Debug [handshake error]: %s", err)
+			}
+			return
+		}
+		defer socket.Close()
+		go wsWriter()
+		wsReader()
+	})
+}
+
+func wsReader() {
+	socket.SetReadDeadline(time.Now().Add(pongWait))
+	socket.SetPongHandler(func(string) error { socket.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	for {
+		_, _, err := socket.ReadMessage()
+		if err != nil {
+			logDebug("Debug [read message]: %s", err)
+			break
+		}
+	}
+	socket.Close()
+}
+
+func wsWriter() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		socket.Close()
+	}()
+
+	for {
+		select {
+		case <-reload:
+			err := socket.WriteMessage(websocket.TextMessage, []byte("reload"))
+			if err != nil {
+				logDebug("Debug [reload error]: %v", err)
+				close(reload)
 				return
 			}
-			log.Fatalf("Error:%v", err)
 		case <-ticker.C:
-			logDebug("%s\n", "Pinging client")
-			err := ws.WriteMessage(websocket.PingMessage, []byte{})
+			logDebug("Debug [ping send]: ping to client")
+			err := socket.WriteMessage(websocket.PingMessage, []byte{})
 			if err != nil {
-				logDebug("Info: %v", err)
+				logDebug("Debug [ping error]: %v", err)
 			}
 		}
 	}
