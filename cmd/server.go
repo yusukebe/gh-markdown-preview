@@ -44,7 +44,7 @@ func (server *Server) Serve(param *Param) {
 
 	r := http.NewServeMux()
 	r.Handle("/__/md", wrapHandler(mdHandler(filename)))
-	r.Handle("/ws", wsHandler(filename))
+	r.Handle("/ws", wsHandler(dir))
 	rootHandler := handler(filename, param, http.FileServer(http.Dir(dir)))
 	r.Handle("/", wrapHandler(rootHandler))
 
@@ -98,7 +98,6 @@ func mdHandler(filename string) http.Handler {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		markdown := slurp(filename)
 		html := toHTML(markdown)
-
 		fmt.Fprintf(w, "%s", html)
 	})
 }
