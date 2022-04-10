@@ -15,7 +15,7 @@ determine_platform() {
   arch="$(uname -m)"
   if uname -a | grep Msys > /dev/null; then
     extension=".exe"
-    if [ "$arch" == "x86_64" ]; then
+    if [ $arch = "x86_64" ]; then
       platform="windows_amd64"
     fi
   elif uname -a | grep Darwin > /dev/null; then
@@ -25,9 +25,9 @@ determine_platform() {
       platform="darwin_arm64"
     fi
   elif uname -a | grep Linux > /dev/null; then
-    if [ "$arch" == "x86_64" ]; then
+    if [ $arch = "x86_64" ]; then
       platform="linux_amd64"
-    elif [ "$arch" == "arm64" ]; then
+    elif [ $arch = "arm64" ]; then
       platform="linux_arm64"
     fi
   fi
