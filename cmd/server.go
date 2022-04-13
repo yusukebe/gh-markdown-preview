@@ -3,7 +3,6 @@ package cmd
 import (
 	_ "embed"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -32,23 +31,35 @@ var htmlTemplate string
 
 const defaultPort = 3333
 
-func (server *Server) Serve(param *Param) {
+func (server *Server) Serve(param *Param) error {
 	host := server.host
 	port := defaultPort
 	if server.port > 0 {
 		port = server.port
 	}
 
-	filename := targetFile(param.filename)
+	filename, err := targetFile(param.filename)
+	if err != nil {
+		return err
+	}
+
 	dir := filepath.Dir(filename)
 
 	r := http.NewServeMux()
+	r.Handle("/", wrapHandler(handler(filename, param, http.FileServer(http.Dir(dir)))))
 	r.Handle("/__/md", wrapHandler(mdHandler(filename)))
-	r.Handle("/ws", wsHandler(dir))
-	rootHandler := handler(filename, param, http.FileServer(http.Dir(dir)))
-	r.Handle("/", wrapHandler(rootHandler))
 
-	port = getPort(host, port)
+	watcher, err := createWatcher(dir)
+	if err != nil {
+		return err
+	}
+	r.Handle("/ws", wsHandler(watcher))
+
+	port, err = getPort(host, port)
+	if err != nil {
+		return err
+	}
+
 	address := fmt.Sprintf("%s:%d", host, port)
 
 	logInfo("Accepting connections at http://%s/\n", address)
@@ -58,10 +69,12 @@ func (server *Server) Serve(param *Param) {
 		go openBrowser(fmt.Sprintf("http://%s/", address))
 	}
 
-	err := http.ListenAndServe(address, r)
+	err = http.ListenAndServe(address, r)
 	if err != nil {
-		log.Fatalf("ListenAndServe: %v", err)
+		return err
 	}
+
+	return nil
 }
 
 func handler(filename string, param *Param, h http.Handler) http.Handler {
@@ -75,29 +88,45 @@ func handler(filename string, param *Param, h http.Handler) http.Handler {
 
 		tmpl, err := template.New("HTML Template").Parse(htmlTemplate)
 		if err != nil {
-			logInfo("error:%v", err)
+			logInfo("Warn: %v", err)
 			http.NotFound(w, r)
 			return
 		}
 
-		markdown := slurp(filename)
-		html := toHTML(markdown)
+		markdown, err := slurp(filename)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		html, err := toHTML(markdown)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		modeString := getModeString(param.forceLightMode, param.forceDarkMode)
 
 		param := TemplateParam{Body: html, Host: r.Host, Reload: param.reload, Mode: modeString}
-
-		if err := tmpl.Execute(w, param); err != nil {
-			log.Fatalf("error:%v", err)
-		}
+		tmpl.Execute(w, param)
 	})
 }
 
 func mdHandler(filename string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		markdown := slurp(filename)
-		html := toHTML(markdown)
+
+		markdown, err := slurp(filename)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		html, err := toHTML(markdown)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
 		fmt.Fprintf(w, "%s", html)
 	})
 }
@@ -130,16 +159,14 @@ func getModeString(lightMode, darkMode bool) string {
 	return ""
 }
 
-func getPort(host string, port int) int {
+func getPort(host string, port int) (int, error) {
+	var err error
 	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {
 		logInfo(err.Error())
 		listener, err = net.Listen("tcp", fmt.Sprintf("%s:0", host))
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
 	}
 	port = listener.Addr().(*net.TCPAddr).Port
 	listener.Close()
-	return port
+	return port, err
 }
