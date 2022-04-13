@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"log"
 	"net/http"
-	"regexp"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -11,9 +9,8 @@ import (
 )
 
 const (
-	pongWait      = 60 * time.Second
-	pingPeriod    = (pongWait * 9) / 10
-	ignorePattern = `\.swp$|~$|^\.DS_Store$|^4913$`
+	pongWait   = 60 * time.Second
+	pingPeriod = (pongWait * 9) / 10
 )
 
 var upgrader = websocket.Upgrader{
@@ -21,41 +18,14 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-var reload chan bool
 var socket *websocket.Conn
 
-func watch(dir string) {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatalf("Error:%v", err)
-	}
-	logInfo("Watching %s/ for changes", dir)
-	err = watcher.Add(dir)
-	if err != nil {
-		log.Fatalf("Error:%v", err)
-	}
+func wsHandler(watcher *fsnotify.Watcher) http.Handler {
+	reload := make(chan bool, 1)
+	errorChan := make(chan error)
+	done := make(chan interface{})
 
-	for {
-		select {
-		case event := <-watcher.Events:
-			if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
-				r := regexp.MustCompile(ignorePattern)
-				if r.MatchString(event.Name) {
-					logDebug("Debug [ignore]: `%s`", event.Name)
-					break
-				}
-				logInfo("Change detected in %s, refreshing", event.Name)
-				reload <- true
-			}
-		case err := <-watcher.Errors:
-			log.Fatalf("Error:%v", err)
-		}
-	}
-}
-
-func wsHandler(dir string) http.Handler {
-	go watch(dir)
-	reload = make(chan bool, 1)
+	go watch(done, errorChan, reload, watcher)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
@@ -66,31 +36,32 @@ func wsHandler(dir string) http.Handler {
 			}
 			return
 		}
-		defer socket.Close()
-		go wsWriter()
-		wsReader()
+		socket.SetReadDeadline(time.Now().Add(pongWait))
+		socket.SetPongHandler(func(string) error { socket.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+
+		go wsReader(done, errorChan)
+		go wsWriter(done, errorChan, reload)
+
+		err = <-errorChan
+		close(done)
+		logInfo("Close WebScoket: %v\n", err)
+		socket.Close()
 	})
 }
 
-func wsReader() {
-	socket.SetReadDeadline(time.Now().Add(pongWait))
-	socket.SetPongHandler(func(string) error { socket.SetReadDeadline(time.Now().Add(pongWait)); return nil })
-	for {
+func wsReader(done <-chan interface{}, errorChan chan<- error) {
+	for range done {
 		_, _, err := socket.ReadMessage()
 		if err != nil {
 			logDebug("Debug [read message]: %s", err)
-			break
+			errorChan <- err
 		}
 	}
-	socket.Close()
 }
 
-func wsWriter() {
+func wsWriter(done <-chan interface{}, errChan chan<- error, reload <-chan bool) {
 	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		ticker.Stop()
-		socket.Close()
-	}()
+	defer ticker.Stop()
 
 	for {
 		select {
@@ -98,15 +69,17 @@ func wsWriter() {
 			err := socket.WriteMessage(websocket.TextMessage, []byte("reload"))
 			if err != nil {
 				logDebug("Debug [reload error]: %v", err)
-				close(reload)
-				return
+				errChan <- err
 			}
 		case <-ticker.C:
 			logDebug("Debug [ping send]: ping to client")
 			err := socket.WriteMessage(websocket.PingMessage, []byte{})
 			if err != nil {
 				logDebug("Debug [ping error]: %v", err)
+				// Do nothing
 			}
+		case <-done:
+			return
 		}
 	}
 }

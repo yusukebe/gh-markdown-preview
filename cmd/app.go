@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,52 +12,54 @@ import (
 	"github.com/cli/safeexec"
 )
 
-func targetFile(filename string) string {
+func targetFile(filename string) (string, error) {
+	var err error
 	if filename == "" {
 		filename = "."
 	}
 	info, err := os.Stat(filename)
-	if err == nil {
-		if info.IsDir() {
-			readme := findReadme(filename)
-			if readme != "" {
-				return readme
-			}
+	if err == nil && info.IsDir() {
+		readme, err := findReadme(filename)
+		if err != nil {
+			return "", err
 		}
+		filename = readme
 	}
-	return filename
+	if err != nil {
+		err = fmt.Errorf("%s is not found", filename)
+	}
+	return filename, err
 }
 
-func findReadme(dir string) string {
+func findReadme(dir string) (string, error) {
 	files, _ := ioutil.ReadDir(dir)
 	for _, f := range files {
 		r := regexp.MustCompile(`(?i)^readme`)
 		if r.MatchString(f.Name()) {
-			return filepath.Join(dir, f.Name())
-
+			return filepath.Join(dir, f.Name()), nil
 		}
 	}
-	return ""
+	err := fmt.Errorf("README file is not found in %s/", dir)
+	return "", err
 }
 
-func toHTML(markdown string) string {
+func toHTML(markdown string) (string, error) {
 	sout, _, err := gh("api", "-X", "POST", "/markdown", "-f", fmt.Sprintf("text=%s", markdown))
 	if err != nil {
-		log.Fatalf("Error:%v", err)
+		return "", err
 	}
-	return sout.String()
+	return sout.String(), nil
 }
 
-func slurp(fileName string) string {
+func slurp(fileName string) (string, error) {
 	f, err := os.Open(fileName)
 	if err != nil {
-		logInfo("Warn: %v", err)
-		return ""
+		return "", err
 	}
 	defer f.Close()
 	b, _ := ioutil.ReadAll(f)
 	text := string(b)
-	return text
+	return text, nil
 }
 
 func gh(args ...string) (sout, eout bytes.Buffer, err error) {
@@ -79,14 +80,4 @@ func gh(args ...string) (sout, eout bytes.Buffer, err error) {
 	}
 
 	return
-}
-
-func logInfo(format string, v ...interface{}) {
-	log.Printf(format, v...)
-}
-
-func logDebug(format string, v ...interface{}) {
-	if verbose {
-		log.Printf(format, v...)
-	}
 }

@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -13,13 +13,22 @@ import (
 )
 
 func TestWriter(t *testing.T) {
-	testFile, err := ioutil.TempFile(os.TempDir(), "markdown-preview-test")
+	testFile, err := os.CreateTemp("", "markdown-preview-test")
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	defer os.Remove(testFile.Name())
+
+	_, _ = testFile.Write([]byte("BEFORE.\n"))
+	dir := filepath.Dir(testFile.Name())
+
+	watcher, err := createWatcher(dir)
+
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 
-	_, _ = testFile.Write([]byte("BEFORE.\n"))
-	s := httptest.NewServer(http.Handler(wsHandler(testFile.Name())))
+	s := httptest.NewServer(http.Handler(wsHandler(watcher)))
 
 	u := "ws" + strings.TrimPrefix(s.URL, "http")
 	ws, _, err := websocket.DefaultDialer.Dial(u, nil)

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -65,7 +66,10 @@ var rootCmd = &cobra.Command{
 			autoOpen:       autoOpen,
 		}
 
-		server.Serve(param)
+		err := server.Serve(param)
+		if err != nil {
+			log.Fatalf("Error: %v", err)
+		}
 	},
 }
 
