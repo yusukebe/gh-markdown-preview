@@ -44,7 +44,7 @@ func wsHandler(watcher *fsnotify.Watcher) http.Handler {
 
 		err = <-errorChan
 		close(done)
-		logInfo("Close WebScoket: %v\n", err)
+		logInfo("Close WebSocket: %v\n", err)
 		socket.Close()
 	})
 }
