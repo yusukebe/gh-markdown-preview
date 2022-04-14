@@ -28,13 +28,13 @@ Live reloading:
 ## Installation
 
 ```
-$ gh extension install yusukebe/gh-markdown-preview
+gh extension install yusukebe/gh-markdown-preview
 ```
 
 Upgrade:
 
 ```
-$ gh extension upgrade markdown-preview
+gh extension upgrade markdown-preview
 ```
 
 ## Usage
@@ -42,13 +42,13 @@ $ gh extension upgrade markdown-preview
 The usage:
 
 ```
-$ gh markdown-preview README.md
+gh markdown-preview README.md
 ```
 
 Or this command will detect README file in the directory automatically.
 
 ```
-$ gh markdown-preview
+gh markdown-preview
 ```
 
 Then access the local web server such as `http://localhost:3333` with Chrome, Firefox, or Safari.
