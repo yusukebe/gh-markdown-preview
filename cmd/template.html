@@ -40,6 +40,25 @@
   </head>
   <body>
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ['$', '$'],
+            ['\\(', '\\)'],
+          ],
+          displayMath: [
+            ['$$', '$$'],
+            ['\\[', '\\]'],
+          ],
+        },
+      }
+    </script>
+    <script
+      type="text/javascript"
+      async
+      src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"
+    ></script>
     <script type="text/javascript">
       function loadmd() {
         $.ajax({
@@ -60,6 +79,7 @@
                   history.replaceState(null,null,url);
                 }
               }
+              MathJax.typeset();
             })
           })}
         })
@@ -80,12 +100,12 @@
           }
           conn.onmessage = function (e) {
             if (e.data === "reload") {
-              console.log("reload page!")
-              loadmd()
+              console.log("reload page!");
+              loadmd();
             }
           }
         }
-        loadmd()
+        loadmd();
       })()
     </script>
     <article id="markdown-body" class="markdown-body"></article>
