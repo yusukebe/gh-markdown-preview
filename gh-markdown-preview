@@ -2,7 +2,7 @@
 set -e
 
 repo="yusukebe/gh-markdown-preview"
-tag="v1.4.1"
+tag="v1.4.2"
 
 extension_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 tag_path="${extension_path}/dist/${tag}"
