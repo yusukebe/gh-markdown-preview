@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"text/template"
 )
 
@@ -78,8 +79,9 @@ func (server *Server) Serve(param *Param) error {
 }
 
 func handler(filename string, param *Param, h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/" {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		if !strings.HasSuffix(r.URL.Path, ".md") && r.URL.Path != "/" {
 			h.ServeHTTP(w, r)
 			return
 		}
@@ -112,8 +114,7 @@ func handler(filename string, param *Param, h http.Handler) http.Handler {
 	})
 }
 
-func mdHandler(filename string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func mdResponse(w http.ResponseWriter, filename string) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 		markdown, err := slurp(filename)
@@ -128,6 +129,17 @@ func mdHandler(filename string) http.Handler {
 			return
 		}
 		fmt.Fprintf(w, "%s", html)
+
+}
+
+func mdHandler(filename string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pathParam := r.URL.Query().Get("path")
+		if pathParam != "" {
+			mdResponse(w, pathParam)
+		} else {
+			mdResponse(w, filename)
+		}
 	})
 }
 
