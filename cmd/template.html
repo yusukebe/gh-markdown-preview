@@ -2,11 +2,11 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     {{ $cssURL :=
-    "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.0.0/github-markdown.min.css" }} {{
+    "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.6.1/github-markdown.min.css" }} {{
     if eq .Mode "dark" }} {{ $cssURL =
-    "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.0.0/github-markdown-dark.min.css"
+    "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.6.1/github-markdown-dark.min.css"
     }} {{ else if eq .Mode "light" }} {{ $cssURL =
-    "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.0.0/github-markdown-light.min.css"
+    "https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.6.1/github-markdown-light.min.css"
     }}{{ end }}
     <link rel="stylesheet" href="{{ $cssURL }}" />
     <style>

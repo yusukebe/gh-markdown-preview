@@ -44,7 +44,7 @@ func findReadme(dir string) (string, error) {
 }
 
 func toHTML(markdown string) (string, error) {
-	sout, _, err := gh("api", "-X", "POST", "/markdown", "-f", fmt.Sprintf("text=%s", markdown))
+	sout, _, err := gh("api", "-X", "POST", "/markdown", "-f", fmt.Sprintf("text=%s", markdown), "-f", "mode=gfm")
 	if err != nil {
 		return "", err
 	}
