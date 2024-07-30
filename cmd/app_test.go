@@ -85,3 +85,54 @@ func TestToHTML(t *testing.T) {
 		t.Errorf("got %v\n want %v", actual, expected)
 	}
 }
+
+func TestGfmCheckboxes(t *testing.T) {
+	string, err := slurp("../testdata/gfm-checkboxes.md")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	html, err := toHTML(string)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	actual := strings.TrimSpace(html)
+
+	checkBoxes := 0
+	checkedCheckBoxes := 0
+	uncheckedCheckBoxes := 0
+	for _, line := range strings.Split(actual, "\n") {
+		if strings.Contains(line, "<input type=\"checkbox\"") {
+			checkBoxes++
+			if strings.Contains(line, "checked") {
+				checkedCheckBoxes++
+			} else {
+				uncheckedCheckBoxes++
+			}
+		}
+	}
+	if checkBoxes != 2 {
+		t.Errorf("got %v checkboxes, want 2", checkBoxes)
+	}
+	if checkedCheckBoxes != 1 {
+		t.Errorf("got %v checked checkboxes, want 1", checkedCheckBoxes)
+	}
+	if uncheckedCheckBoxes != 1 {
+		t.Errorf("got %v unchecked checkboxes, want 1", uncheckedCheckBoxes)
+	}
+}
+
+func TestGfmAlerts(t *testing.T) {
+	string, err := slurp("../testdata/gfm-alerts.md")
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	html, err := toHTML(string)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	actual := strings.TrimSpace(html)
+
+	if strings.Contains(actual, "<blockquote") {
+		t.Error("got blockquote tag instead of alerts")
+	}
+}
