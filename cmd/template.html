@@ -86,7 +86,7 @@
               MathJax.typeset();
             });
             $('div.highlight-source-mermaid > pre').each(function(i, pre) {
-              pre.innerHTML = pre.innerText;
+              pre.textContent = pre.textContent;
             });
 
             {{ if eq .Mode "dark" }}
@@ -98,8 +98,8 @@
             {{ end }}
             mermaid.initialize({ startOnLoad: false, theme: mermaidJsTheme });
             mermaid.run({
-                querySelector: 'div.highlight-source-mermaid > pre',
-              });
+              querySelector: 'div.highlight-source-mermaid > pre',
+            });
           })}
         })
       };
