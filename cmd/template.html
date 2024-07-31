@@ -92,9 +92,9 @@
             {{ if eq .Mode "dark" }}
               const mermaidJsTheme = 'dark';
             {{ else if eq .Mode "light" }}
-              const mermaidJsTheme = 'neutral';
+              const mermaidJsTheme = 'default';
             {{ else }}
-              const mermaidJsTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'neutral';
+              const mermaidJsTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
             {{ end }}
             mermaid.initialize({ startOnLoad: false, theme: mermaidJsTheme });
             mermaid.run({
