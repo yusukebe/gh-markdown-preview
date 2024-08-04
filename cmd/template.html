@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -83,7 +84,22 @@
                 }
               }
               MathJax.typeset();
-            })
+            });
+            $('div.highlight-source-mermaid > pre').each(function(i, pre) {
+              pre.textContent = pre.textContent;
+            });
+
+            {{ if eq .Mode "dark" }}
+              const mermaidJsTheme = 'dark';
+            {{ else if eq .Mode "light" }}
+              const mermaidJsTheme = 'default';
+            {{ else }}
+              const mermaidJsTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
+            {{ end }}
+            mermaid.initialize({ startOnLoad: false, theme: mermaidJsTheme });
+            mermaid.run({
+              querySelector: 'div.highlight-source-mermaid > pre',
+            });
           })}
         })
       };
@@ -111,6 +127,7 @@
         loadmd();
       })()
     </script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
     <article id="markdown-body" class="markdown-body"></article>
   </body>
 </html>
