@@ -21,18 +21,62 @@
       {{ else if eq .Mode "light" }}
       {{ else }}
       @media (prefers-color-scheme: dark) {
-        body {
-          background-color: #0d1117;
-          color: #c9d1d9;
-        }
+      body {
+        background-color: #0d1117;
+        color: #c9d1d9;
+      }
+      .copy-button:hover {
+        background-color: #262c36;
+      }
+      } 
+      @media (prefers-color-scheme: light) {
+      .copy-button:hover {
+        background-color: #eff2f5;
+      }
       }
       {{ end }}
+      :root {
+        --copy-icon-stroke-dark: #9198a1;
+        --copy-icon-stroke-light: #59636e;
+        --tick-icon-stroke-dark: #3fb950;
+        --tick-icon-stroke-light: #3fb950;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .copy-button svg.copy-icon {
+          stroke: var(--copy-icon-stroke-dark);
+          color: var(--copy-icon-stroke-dark);
+        }
+        .copy-button svg.tick-icon {
+           stroke: var(--tick-icon-stroke-dark);
+        }
+      }
+
+      @media (prefers-color-scheme: light) {
+        .copy-button svg.copy-icon {
+          stroke: var(--copy-icon-stroke-light);
+        }
+        .copy-button svg.tick-icon {
+          stroke: var(--tick-icon-stroke-light);
+        }
+      }
       .markdown-body {
         box-sizing: border-box;
         min-width: 200px;
         max-width: 920px;
         margin: 0 auto;
         padding: 45px;
+      }
+      .copy-button {
+        background-color: transparent;
+        border: none;
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        border-radius: 5px;
+        padding: 5px;
+        transition: border-width 0.2s ease;
+        cursor: pointer;
       }
       @media (max-width: 767px) {
         .markdown-body {
@@ -64,7 +108,6 @@
     ></script>
     <script type="text/javascript">
       function loadmd() {
-
         $.ajax({
           url: "/__/md?path=" + window.location.pathname.slice(1),
           success: function (result) {
@@ -100,6 +143,25 @@
             mermaid.run({
               querySelector: 'div.highlight-source-mermaid > pre',
             });
+              const copyIcon= `<svg class="copy-icon" aria-hidden="true" fill="none" height="18" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18" style="color:"currentColor";"><path d="M8 17.929H6c-1.105 0-2-.912-2-2.036V5.036C4 3.91 4.895 3 6 3h8c1.105 0 2 .911 2 2.036v1.866m-6 .17h8c1.105 0 2 .91 2 2.035v10.857C20 21.09 19.105 22 18 22h-8c-1.105 0-2-.911-2-2.036V9.107c0-1.124.895-2.036 2-2.036z"></path></svg>`;
+              const tickIcon = `<svg class="tick-icon" aria-hidden="true" fill="none" height="18" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18" style="color: "currentColor";"><path d="M5 13l4 4L19 7"></path></svg>`;
+              $('.markdown-body pre').each(function () {
+                const pre = $(this);
+                const code = pre.find('code');
+                const button = $(`<button class="copy-button" aria-label="Copy code to clipboard">${copyIcon}</button>`);
+                pre.css("position", "relative");
+                pre.append(button);
+                button.on('click', function () {
+                  navigator.clipboard.writeText(code.text()).then(function () {
+                    button.html(tickIcon);
+                    setTimeout(() => {
+                      button.html(copyIcon)
+                    }, 1000);
+                  }, function () {
+                    alert('Failed to copy');
+                  });
+                });
+              });
           })}
         })
       };
