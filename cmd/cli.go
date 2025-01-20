@@ -14,6 +14,7 @@ var verbose = false
 
 type Param struct {
 	filename       string
+	markdownMode   bool
 	reload         bool
 	forceLightMode bool
 	forceDarkMode  bool
@@ -52,6 +53,8 @@ var rootCmd = &cobra.Command{
 		forceLightMode, _ := cmd.Flags().GetBool("light-mode")
 		forceDarkMode, _ := cmd.Flags().GetBool("dark-mode")
 
+		markdownMode, _ := cmd.Flags().GetBool("markdown-mode")
+
 		disableAutoOpen, _ := cmd.Flags().GetBool("disable-auto-open")
 		autoOpen := true
 		if disableAutoOpen {
@@ -60,6 +63,7 @@ var rootCmd = &cobra.Command{
 
 		param := &Param{
 			filename:       filename,
+			markdownMode:   markdownMode,
 			reload:         reload,
 			forceLightMode: forceLightMode,
 			forceDarkMode:  forceDarkMode,
@@ -85,6 +89,7 @@ func init() {
 	rootCmd.Flags().StringP("host", "", "localhost", "Hostname this server will bind")
 	rootCmd.Flags().BoolP("version", "", false, "Show the version")
 	rootCmd.Flags().BoolP("disable-reload", "", false, "Disable live reloading")
+	rootCmd.Flags().BoolP("markdown-mode", "", false, "Force \"markdown\" mode (rather than default \"gfm\")")
 	rootCmd.Flags().BoolP("disable-auto-open", "", false, "Disable auto opening your browser")
 	rootCmd.Flags().BoolP("verbose", "", false, "Show verbose output")
 	rootCmd.Flags().BoolP("light-mode", "", false, "Force light mode")

@@ -49,7 +49,7 @@ func (server *Server) Serve(param *Param) error {
 
 	r := http.NewServeMux()
 	r.Handle("/", wrapHandler(handler(filename, param, http.FileServer(http.Dir(dir)))))
-	r.Handle("/__/md", wrapHandler(mdHandler(filename)))
+	r.Handle("/__/md", wrapHandler(mdHandler(filename, param)))
 
 	watcher, err := createWatcher(dir)
 	if err != nil {
@@ -102,7 +102,7 @@ func handler(filename string, param *Param, h http.Handler) http.Handler {
 			return
 		}
 
-		html, err := toHTML(markdown)
+		html, err := toHTML(markdown, param)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -116,7 +116,7 @@ func handler(filename string, param *Param, h http.Handler) http.Handler {
 	})
 }
 
-func mdResponse(w http.ResponseWriter, filename string) {
+func mdResponse(w http.ResponseWriter, filename string, param *Param) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 	markdown, err := slurp(filename)
@@ -125,7 +125,7 @@ func mdResponse(w http.ResponseWriter, filename string) {
 		return
 	}
 
-	html, err := toHTML(markdown)
+	html, err := toHTML(markdown, param)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -134,13 +134,13 @@ func mdResponse(w http.ResponseWriter, filename string) {
 
 }
 
-func mdHandler(filename string) http.Handler {
+func mdHandler(filename string, param *Param) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pathParam := r.URL.Query().Get("path")
 		if pathParam != "" {
-			mdResponse(w, pathParam)
+			mdResponse(w, pathParam, param)
 		} else {
-			mdResponse(w, filename)
+			mdResponse(w, filename, param)
 		}
 	})
 }

@@ -57,6 +57,7 @@ Available options:
 
 ```text
     --dark-mode           Force dark mode
+    --markdown-mode       Force "markdown" mode (rather than default "gfm")
     --disable-auto-open   Disable auto opening your browser
     --disable-reload      Disable live reloading
 -h, --help                help for gh-markdown-preview
