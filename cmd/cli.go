@@ -19,6 +19,7 @@ type Param struct {
 	forceLightMode bool
 	forceDarkMode  bool
 	autoOpen       bool
+	mermaidVersion string
 }
 
 var rootCmd = &cobra.Command{
@@ -55,6 +56,8 @@ var rootCmd = &cobra.Command{
 
 		markdownMode, _ := cmd.Flags().GetBool("markdown-mode")
 
+		mermaidVersion, _ := cmd.Flags().GetString("mermaid-version")
+
 		disableAutoOpen, _ := cmd.Flags().GetBool("disable-auto-open")
 		autoOpen := true
 		if disableAutoOpen {
@@ -68,6 +71,7 @@ var rootCmd = &cobra.Command{
 			forceLightMode: forceLightMode,
 			forceDarkMode:  forceDarkMode,
 			autoOpen:       autoOpen,
+			mermaidVersion: mermaidVersion,
 		}
 
 		err := server.Serve(param)
@@ -94,6 +98,7 @@ func init() {
 	rootCmd.Flags().BoolP("verbose", "", false, "Show verbose output")
 	rootCmd.Flags().BoolP("light-mode", "", false, "Force light mode")
 	rootCmd.Flags().BoolP("dark-mode", "", false, "Force dark mode")
+	rootCmd.Flags().StringP("mermaid-version", "", "11.3.0", "Set the mermaidjs version")
 }
 
 func showVersion() {
