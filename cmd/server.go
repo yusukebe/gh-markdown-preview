@@ -11,11 +11,12 @@ import (
 )
 
 type TemplateParam struct {
-	Title  string
-	Body   string
-	Host   string
-	Reload bool
-	Mode   string
+	Title          string
+	Body           string
+	Host           string
+	Reload         bool
+	Mode           string
+	MermaidVersion string
 }
 
 type Server struct {
@@ -111,7 +112,14 @@ func handler(filename string, param *Param, h http.Handler) http.Handler {
 		title := getTitle(filename)
 		modeString := getModeString(param.forceLightMode, param.forceDarkMode)
 
-		param := TemplateParam{Title: title, Body: html, Host: r.Host, Reload: param.reload, Mode: modeString}
+		param := TemplateParam{
+			MermaidVersion: param.mermaidVersion,
+			Title:          title,
+			Body:           html,
+			Host:           r.Host,
+			Reload:         param.reload,
+			Mode:           modeString,
+		}
 		tmpl.Execute(w, param)
 	})
 }
@@ -131,7 +139,6 @@ func mdResponse(w http.ResponseWriter, filename string, param *Param) {
 		return
 	}
 	fmt.Fprintf(w, "%s", html)
-
 }
 
 func mdHandler(filename string, param *Param) http.Handler {
