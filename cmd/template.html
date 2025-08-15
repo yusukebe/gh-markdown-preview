@@ -128,10 +128,6 @@
               }
               MathJax.typeset();
             });
-            $('div.highlight-source-mermaid > pre').each(function(i, pre) {
-              pre.textContent = pre.textContent;
-            });
-
             {{ if eq .Mode "dark" }}
               const mermaidJsTheme = 'dark';
             {{ else if eq .Mode "light" }}
@@ -140,19 +136,49 @@
               const mermaidJsTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
             {{ end }}
             mermaid.initialize({ startOnLoad: false, theme: mermaidJsTheme });
-            mermaid.run({
-              querySelector: 'div.highlight-source-mermaid > pre',
+            
+            $('div.highlight-source-mermaid > pre').each(async function(i, pre) {
+              const originalText = pre.textContent;
+              const id = 'mermaid-diagram-' + i;
+              try {
+                const { svg } = await mermaid.render(id, originalText);
+                $(pre).html(svg);
+                // Store original text for copy functionality
+                $(pre).data('original-text', originalText);
+                // Add copy button after rendering
+                const button = $(`<button class="copy-button" aria-label="Copy mermaid code to clipboard">${copyIcon}</button>`);
+                $(pre).css("position", "relative").append(button);
+                button.on('click', function () {
+                  navigator.clipboard.writeText(originalText).then(function () {
+                    button.html(tickIcon);
+                    setTimeout(() => {
+                      button.html(copyIcon)
+                    }, 1000);
+                  }, function () {
+                    alert('Failed to copy');
+                  });
+                });
+              } catch (error) {
+                console.error('Mermaid rendering error:', error);
+                $(pre).html('<div style="color: red;">Error rendering diagram</div>');
+              }
             });
               const copyIcon= `<svg class="copy-icon" aria-hidden="true" fill="none" height="18" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18" style="color:"currentColor";"><path d="M8 17.929H6c-1.105 0-2-.912-2-2.036V5.036C4 3.91 4.895 3 6 3h8c1.105 0 2 .911 2 2.036v1.866m-6 .17h8c1.105 0 2 .91 2 2.035v10.857C20 21.09 19.105 22 18 22h-8c-1.105 0-2-.911-2-2.036V9.107c0-1.124.895-2.036 2-2.036z"></path></svg>`;
               const tickIcon = `<svg class="tick-icon" aria-hidden="true" fill="none" height="18" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18" style="color: "currentColor";"><path d="M5 13l4 4L19 7"></path></svg>`;
               $('.markdown-body pre').each(function () {
                 const pre = $(this);
+                // Skip if this is a Mermaid diagram (already has copy button)
+                if ($(pre).closest('div.highlight-source-mermaid').length > 0) {
+                  return;
+                }
                 const code = pre.find('code');
                 const button = $(`<button class="copy-button" aria-label="Copy code to clipboard">${copyIcon}</button>`);
                 pre.css("position", "relative");
                 pre.append(button);
                 button.on('click', function () {
-                  navigator.clipboard.writeText(code.text()).then(function () {
+                  // Get text from code element if it exists, otherwise from pre element directly
+                  const textToCopy = code.length > 0 ? code.text() : pre.text().replace(/Copy.*$/, '').trim();
+                  navigator.clipboard.writeText(textToCopy).then(function () {
                     button.html(tickIcon);
                     setTimeout(() => {
                       button.html(copyIcon)
