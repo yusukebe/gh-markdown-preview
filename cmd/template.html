@@ -219,10 +219,12 @@
         loadmd();
       })()
     </script>
-    <script
-      type="text/javascript"
-      src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.3.0/mermaid.min.js"
-    ></script>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
+      mermaid.registerLayoutLoaders(elkLayouts);
+      window.mermaid = mermaid;
+    </script>
     <article id="markdown-body" class="markdown-body"></article>
   </body>
 </html>
