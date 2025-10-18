@@ -75,7 +75,7 @@ func TestGh(t *testing.T) {
 
 func TestToHTML(t *testing.T) {
 	markdown := "text"
-	html, err := toHTML(markdown)
+	html, err := toHTML(markdown, &Param{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -91,7 +91,7 @@ func TestGfmCheckboxes(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	html, err := toHTML(string)
+	html, err := toHTML(string, &Param{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -126,7 +126,7 @@ func TestGfmAlerts(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-	html, err := toHTML(string)
+	html, err := toHTML(string, &Param{})
 	if err != nil {
 		t.Errorf(err.Error())
 	}
