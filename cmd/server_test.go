@@ -43,7 +43,8 @@ func TestHandler(t *testing.T) {
 
 func TestMdHandler(t *testing.T) {
 	filename := "../testdata/markdown-demo.md"
-	ts := httptest.NewServer(mdHandler(filename))
+	param := &Param{reload: false}
+	ts := httptest.NewServer(mdHandler(filename, param))
 	defer ts.Close()
 
 	res, err := http.Get(ts.URL)

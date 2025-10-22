@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -19,6 +20,9 @@ type Param struct {
 	forceLightMode bool
 	forceDarkMode  bool
 	autoOpen       bool
+	// stdin support
+	useStdin     bool
+	stdinContent string
 }
 
 var rootCmd = &cobra.Command{
@@ -61,6 +65,27 @@ var rootCmd = &cobra.Command{
 			autoOpen = false
 		}
 
+		// Detect stdin usage
+		useStdin := false
+		stdinContent := ""
+		if filename == "-" {
+			data, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				log.Fatalf("Error reading stdin: %v", err)
+			}
+			stdinContent = string(data)
+			useStdin = true
+		} else if filename == "" {
+			if fi, _ := os.Stdin.Stat(); (fi.Mode() & os.ModeCharDevice) == 0 {
+				data, err := io.ReadAll(os.Stdin)
+				if err != nil {
+					log.Fatalf("Error reading stdin: %v", err)
+				}
+				stdinContent = string(data)
+				useStdin = true
+			}
+		}
+
 		param := &Param{
 			filename:       filename,
 			markdownMode:   markdownMode,
@@ -68,6 +93,8 @@ var rootCmd = &cobra.Command{
 			forceLightMode: forceLightMode,
 			forceDarkMode:  forceDarkMode,
 			autoOpen:       autoOpen,
+			useStdin:       useStdin,
+			stdinContent:   stdinContent,
 		}
 
 		err := server.Serve(param)

@@ -40,9 +40,14 @@ func (server *Server) Serve(param *Param) error {
 		port = server.port
 	}
 
-	filename, err := targetFile(param.filename)
-	if err != nil {
-		return err
+	// Use a empty filename for stdin
+	filename := ""
+	if !param.useStdin {
+		var err error
+		filename, err = targetFile(param.filename)
+		if err != nil {
+			return err
+		}
 	}
 
 	dir := filepath.Dir(filename)
@@ -96,10 +101,15 @@ func handler(filename string, param *Param, h http.Handler) http.Handler {
 			return
 		}
 
-		markdown, err := slurp(filename)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		var markdown string
+		if param.useStdin && param.stdinContent != "" && filename == "" {
+			markdown = param.stdinContent
+		} else {
+			markdown, err = slurp(filename)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 
 		html, err := toHTML(markdown, param)
@@ -118,11 +128,16 @@ func handler(filename string, param *Param, h http.Handler) http.Handler {
 
 func mdResponse(w http.ResponseWriter, filename string, param *Param) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-
-	markdown, err := slurp(filename)
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
+	var markdown string
+	var err error
+	if param.useStdin && param.stdinContent != "" && filename == "" {
+		markdown = param.stdinContent
+	} else {
+		markdown, err = slurp(filename)
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
 	}
 
 	html, err := toHTML(markdown, param)
