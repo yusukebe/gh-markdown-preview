@@ -130,8 +130,36 @@
                   history.replaceState(null,null,url);
                 }
               }
-              MathJax.typeset();
             });
+            const typesetMath = (retries = 20) => {
+              const markdownBody = document.getElementById("markdown-body");
+              if (!markdownBody) {
+                return;
+              }
+
+              if (!window.MathJax || (!MathJax.typesetPromise && !MathJax.typeset)) {
+                if (retries > 0) {
+                  setTimeout(() => typesetMath(retries - 1), 100);
+                }
+                return;
+              }
+
+              if (MathJax.typesetClear) {
+                MathJax.typesetClear([markdownBody]);
+              }
+
+              if (MathJax.typesetPromise) {
+                MathJax.typesetPromise([markdownBody]).catch((err) => console.error(err));
+              } else {
+                MathJax.typeset([markdownBody]);
+              }
+            };
+
+            if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
+              MathJax.startup.promise.then(() => typesetMath());
+            } else {
+              typesetMath();
+            }
             {{ if eq .Mode "dark" }}
               const mermaidJsTheme = 'dark';
             {{ else if eq .Mode "light" }}
