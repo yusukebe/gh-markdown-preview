@@ -48,7 +48,22 @@ func toHTML(markdown string, param *Param) (string, error) {
 	if param.markdownMode {
 		mode = "markdown"
 	}
-	sout, _, err := gh("api", "-X", "POST", "/markdown", "-f", fmt.Sprintf("text=%s", markdown), "-f", fmt.Sprintf("mode=%s", mode))
+
+	f, err := os.CreateTemp("", "gh-markdown-preview-*.md")
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(f.Name())
+
+	if _, err := f.WriteString(markdown); err != nil {
+		f.Close()
+		return "", err
+	}
+	if err := f.Close(); err != nil {
+		return "", err
+	}
+
+	sout, _, err := gh("api", "-X", "POST", "/markdown", "-F", fmt.Sprintf("text=@%s", f.Name()), "-f", fmt.Sprintf("mode=%s", mode))
 	if err != nil {
 		return "", err
 	}
