@@ -87,6 +87,18 @@
           padding: 15px;
         }
       }
+      @media print {
+        @page { size: A4; margin: 12mm; }
+        .markdown-body { font-size: 9pt; padding: 0; }
+        .markdown-body table { display: table; width: auto; max-width: 100%; overflow: visible; font-size: 8pt; }
+        .markdown-body th, .markdown-body td { word-break: normal; overflow-wrap: break-word; padding: 3px 8px; }
+        .markdown-body table code { white-space: normal; word-break: normal; }
+        .markdown-body thead { display: table-header-group; }
+        .markdown-body tr, .markdown-body img { break-inside: avoid; }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3 { break-after: avoid; }
+        .markdown-body pre { white-space: pre-wrap; overflow-wrap: break-word; overflow: visible; }
+        .copy-button { display: none; }
+      }
     </style>
   </head>
   <body>
