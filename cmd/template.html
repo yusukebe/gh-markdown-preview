@@ -87,6 +87,45 @@
           padding: 15px;
         }
       }
+      @media print {
+        @page {
+          margin: 12mm;
+        }
+        .markdown-body {
+          padding: 0;
+        }
+        .markdown-body table {
+          display: table;
+          width: auto;
+          max-width: 100%;
+          overflow: visible;
+          font-size: 0.85em;
+        }
+        .markdown-body th,
+        .markdown-body td {
+          overflow-wrap: break-word;
+        }
+        .markdown-body table code {
+          white-space: normal;
+        }
+        .markdown-body tr,
+        .markdown-body img {
+          break-inside: avoid;
+        }
+        .markdown-body h1,
+        .markdown-body h2,
+        .markdown-body h3 {
+          break-after: avoid;
+        }
+        .markdown-body pre {
+          white-space: pre-wrap;
+          overflow-wrap: break-word;
+          overflow: visible;
+        }
+        .copy-button {
+          display: none;
+        }
+      }
     </style>
   </head>
   <body>
