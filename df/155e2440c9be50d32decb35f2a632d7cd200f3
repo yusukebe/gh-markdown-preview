@@ -1,0 +1,19 @@
+gh-markdown-preview
+  s_7e30ca54f0b4c7::t_b567eab50f34d4 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "df155e2440c9be50d32decb35f2a632d7cd200f3",
+  "prompts": {},
+  "sessions": {
+    "s_7e30ca54f0b4c7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "495e8552-2e54-4396-939e-5f200c243271",
+        "model": "unknown"
+      },
+      "human_author": "Yusuke Wada <yusuke@kamawada.com>"
+    }
+  }
+}
