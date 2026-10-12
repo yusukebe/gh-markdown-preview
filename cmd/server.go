@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -101,11 +103,17 @@ func handler(filename string, param *Param, h http.Handler) http.Handler {
 			return
 		}
 
+		target := resolveMarkdownPath(filename, r.URL.Path)
+
 		var markdown string
-		if param.useStdin && param.stdinContent != "" && filename == "" {
+		if param.useStdin && param.stdinContent != "" && target == "" {
 			markdown = param.stdinContent
 		} else {
-			markdown, err = slurp(filename)
+			markdown, err = slurp(target)
+			if os.IsNotExist(err) {
+				http.NotFound(w, r)
+				return
+			}
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -118,7 +126,7 @@ func handler(filename string, param *Param, h http.Handler) http.Handler {
 			return
 		}
 
-		title := getTitle(filename)
+		title := getTitle(target)
 		modeString := getModeString(param.forceLightMode, param.forceDarkMode)
 
 		param := TemplateParam{Title: title, Body: html, Host: r.Host, Reload: param.reload, Mode: modeString}
@@ -134,6 +142,10 @@ func mdResponse(w http.ResponseWriter, filename string, param *Param) {
 		markdown = param.stdinContent
 	} else {
 		markdown, err = slurp(filename)
+		if os.IsNotExist(err) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -151,13 +163,16 @@ func mdResponse(w http.ResponseWriter, filename string, param *Param) {
 
 func mdHandler(filename string, param *Param) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pathParam := r.URL.Query().Get("path")
-		if pathParam != "" {
-			mdResponse(w, pathParam, param)
-		} else {
-			mdResponse(w, filename, param)
-		}
+		mdResponse(w, resolveMarkdownPath(filename, r.URL.Query().Get("path")), param)
 	})
+}
+
+func resolveMarkdownPath(filename, urlPath string) string {
+	cleaned := path.Clean("/" + urlPath)
+	if cleaned == "/" {
+		return filename
+	}
+	return filepath.Join(filepath.Dir(filename), filepath.FromSlash(cleaned))
 }
 
 func NewLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
