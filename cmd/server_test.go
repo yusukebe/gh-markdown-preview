@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -104,5 +106,53 @@ func TestGetModeString(t *testing.T) {
 	expected = ""
 	if modeString != expected {
 		t.Errorf("mode string is not: %s", modeString)
+	}
+}
+
+func TestHandlerLinkedMarkdown(t *testing.T) {
+	filename := "../testdata/markdown-demo.md"
+	dir := filepath.Dir(filename)
+	param := &Param{reload: false}
+	ts := httptest.NewServer(handler(filename, param, http.FileServer(http.Dir(dir))))
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/gfm-alerts.md")
+	if err != nil {
+		t.Fatalf("unexpected: %v\n", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		t.Errorf("server status error, got: %v", res.StatusCode)
+	}
+	body, _ := io.ReadAll(res.Body)
+	if !strings.Contains(string(body), "<title>gfm-alerts.md</title>") {
+		t.Errorf("linked markdown was not rendered, got: %s", body)
+	}
+
+	r2, err := http.Get(ts.URL + "/missing.md")
+	if err != nil {
+		t.Fatalf("unexpected: %v\n", err)
+	}
+	if r2.StatusCode != 404 {
+		t.Errorf("server status error, got: %v", r2.StatusCode)
+	}
+}
+
+func TestResolveMarkdownPath(t *testing.T) {
+	filename := filepath.Join("docs", "README.md")
+	tests := []struct {
+		urlPath  string
+		expected string
+	}{
+		{"", filename},
+		{"/", filename},
+		{"/guide.md", filepath.Join("docs", "guide.md")},
+		{"sub/page.md", filepath.Join("docs", "sub", "page.md")},
+		{"/../../etc/passwd.md", filepath.Join("docs", "etc", "passwd.md")},
+	}
+	for _, tt := range tests {
+		if got := resolveMarkdownPath(filename, tt.urlPath); got != tt.expected {
+			t.Errorf("resolveMarkdownPath(%q) = %q, want %q", tt.urlPath, got, tt.expected)
+		}
 	}
 }
