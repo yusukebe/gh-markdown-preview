@@ -16,7 +16,7 @@ func TestHandler(t *testing.T) {
 	param := &Param{
 		reload: false,
 	}
-	ts := httptest.NewServer(handler(filename, param, http.FileServer(http.Dir(dir))))
+	ts := httptest.NewServer(handler(filename, param, http.FileServer(http.Dir(dir)), nil))
 	defer ts.Close()
 
 	res, err := http.Get(ts.URL)
@@ -109,11 +109,31 @@ func TestGetModeString(t *testing.T) {
 	}
 }
 
+func TestMdHandlerMissingFile(t *testing.T) {
+	filename := "../testdata/markdown-demo.md"
+	param := &Param{reload: false}
+	ts := httptest.NewServer(mdHandler(filename, param))
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/?path=missing.md")
+	if err != nil {
+		t.Fatalf("unexpected: %v\n", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != 404 {
+		t.Errorf("server status error, got: %v", res.StatusCode)
+	}
+	body, _ := io.ReadAll(res.Body)
+	if strings.Contains(string(body), "testdata") {
+		t.Errorf("404 response should not include the file path, got: %s", body)
+	}
+}
+
 func TestHandlerLinkedMarkdown(t *testing.T) {
 	filename := "../testdata/markdown-demo.md"
 	dir := filepath.Dir(filename)
 	param := &Param{reload: false}
-	ts := httptest.NewServer(handler(filename, param, http.FileServer(http.Dir(dir))))
+	ts := httptest.NewServer(handler(filename, param, http.FileServer(http.Dir(dir)), nil))
 	defer ts.Close()
 
 	res, err := http.Get(ts.URL + "/gfm-alerts.md")
@@ -149,6 +169,8 @@ func TestResolveMarkdownPath(t *testing.T) {
 		{"/guide.md", filepath.Join("docs", "guide.md")},
 		{"sub/page.md", filepath.Join("docs", "sub", "page.md")},
 		{"/../../etc/passwd.md", filepath.Join("docs", "etc", "passwd.md")},
+		{"..\\..\\etc\\passwd.md", filepath.Join("docs", "etc", "passwd.md")},
+		{"/sub\\..\\..\\secret.md", filepath.Join("docs", "secret.md")},
 	}
 	for _, tt := range tests {
 		if got := resolveMarkdownPath(filename, tt.urlPath); got != tt.expected {
