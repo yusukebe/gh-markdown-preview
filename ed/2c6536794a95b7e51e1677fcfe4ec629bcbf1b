@@ -1,0 +1,19 @@
+gh-markdown-preview
+  s_4533e59b1adea3::t_afc4d2970107e7 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ed2c6536794a95b7e51e1677fcfe4ec629bcbf1b",
+  "prompts": {},
+  "sessions": {
+    "s_4533e59b1adea3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e599c41e-f0ee-419d-afe0-9179b0e04430",
+        "model": "unknown"
+      },
+      "human_author": "Yusuke Wada <yusuke@kamawada.com>"
+    }
+  }
+}
