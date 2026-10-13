@@ -1,0 +1,23 @@
+cmd/server.go
+  s_4533e59b1adea3::t_21462405589a80 13-14,62-65,90,109-116,120,126,140,144,164-167,169
+cmd/server_test.go
+  s_4533e59b1adea3::t_59fe92a85c9145 19,112-131,136,172-173
+cmd/watcher.go
+  s_4533e59b1adea3::t_bf49388dccc81f 5,14-15,23-25,29-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d080713b342c49ef344efdcd41b71ef506913404",
+  "prompts": {},
+  "sessions": {
+    "s_4533e59b1adea3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e599c41e-f0ee-419d-afe0-9179b0e04430",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Yusuke Wada <yusuke@kamawada.com>"
+    }
+  }
+}
