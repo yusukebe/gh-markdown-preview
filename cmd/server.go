@@ -10,11 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/fsnotify/fsnotify"
 )
 
 type TemplateParam struct {
 	Title  string
-	Body   string
 	Host   string
 	Reload bool
 	Mode   string
@@ -54,14 +55,14 @@ func (server *Server) Serve(param *Param) error {
 
 	dir := filepath.Dir(filename)
 
-	r := http.NewServeMux()
-	r.Handle("/", wrapHandler(handler(filename, param, http.FileServer(http.Dir(dir)))))
-	r.Handle("/__/md", wrapHandler(mdHandler(filename, param)))
-
 	watcher, err := createWatcher(dir)
 	if err != nil {
 		return err
 	}
+
+	r := http.NewServeMux()
+	r.Handle("/", wrapHandler(handler(filename, param, http.FileServer(http.Dir(dir)), watcher)))
+	r.Handle("/__/md", wrapHandler(mdHandler(filename, param)))
 	r.Handle("/ws", wsHandler(watcher))
 
 	port, err = getPort(host, port)
@@ -86,7 +87,7 @@ func (server *Server) Serve(param *Param) error {
 	return nil
 }
 
-func handler(filename string, param *Param, h http.Handler) http.Handler {
+func handler(filename string, param *Param, h http.Handler, watcher *fsnotify.Watcher) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		if !strings.HasSuffix(r.URL.Path, ".md") && r.URL.Path != "/" {
@@ -105,31 +106,24 @@ func handler(filename string, param *Param, h http.Handler) http.Handler {
 
 		target := resolveMarkdownPath(filename, r.URL.Path)
 
-		var markdown string
-		if param.useStdin && param.stdinContent != "" && target == "" {
-			markdown = param.stdinContent
-		} else {
-			markdown, err = slurp(target)
-			if os.IsNotExist(err) {
-				http.NotFound(w, r)
-				return
-			}
-			if err != nil {
+		// The markdown body is fetched by the page via /__/md, so only
+		// make sure the file exists and watch its directory for changes.
+		if !(param.useStdin && param.stdinContent != "" && target == "") {
+			if _, err := os.Stat(target); err != nil {
+				if os.IsNotExist(err) {
+					http.NotFound(w, r)
+					return
+				}
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-		}
-
-		html, err := toHTML(markdown, param)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			watchDir(watcher, filepath.Dir(target))
 		}
 
 		title := getTitle(target)
 		modeString := getModeString(param.forceLightMode, param.forceDarkMode)
 
-		param := TemplateParam{Title: title, Body: html, Host: r.Host, Reload: param.reload, Mode: modeString}
+		param := TemplateParam{Title: title, Host: r.Host, Reload: param.reload, Mode: modeString}
 		tmpl.Execute(w, param)
 	})
 }
@@ -143,11 +137,11 @@ func mdResponse(w http.ResponseWriter, filename string, param *Param) {
 	} else {
 		markdown, err = slurp(filename)
 		if os.IsNotExist(err) {
-			http.Error(w, err.Error(), http.StatusNotFound)
+			http.Error(w, "404 page not found", http.StatusNotFound)
 			return
 		}
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
@@ -167,8 +161,12 @@ func mdHandler(filename string, param *Param) http.Handler {
 	})
 }
 
+// resolveMarkdownPath maps a request path (or the `path` query of /__/md)
+// to a file inside the previewed file's directory. The path is cleaned
+// first so that `..` segments cannot escape that directory. Backslashes are
+// treated as separators so that `..\` cannot bypass the cleaning on Windows.
 func resolveMarkdownPath(filename, urlPath string) string {
-	cleaned := path.Clean("/" + urlPath)
+	cleaned := path.Clean("/" + strings.ReplaceAll(urlPath, "\\", "/"))
 	if cleaned == "/" {
 		return filename
 	}
