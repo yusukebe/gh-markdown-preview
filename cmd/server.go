@@ -63,7 +63,7 @@ func (server *Server) Serve(param *Param) error {
 	r := http.NewServeMux()
 	r.Handle("/", wrapHandler(handler(filename, param, http.FileServer(http.Dir(dir)), watcher)))
 	r.Handle("/__/md", wrapHandler(mdHandler(filename, param)))
-	r.Handle("/ws", wsHandler(watcher))
+	r.Handle("/ws", wsHandler(watcher, filename))
 
 	port, err = getPort(host, port)
 	if err != nil {

@@ -28,7 +28,7 @@ func TestWriter(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 
-	s := httptest.NewServer(http.Handler(wsHandler(watcher)))
+	s := httptest.NewServer(http.Handler(wsHandler(watcher, testFile.Name())))
 
 	u := "ws" + strings.TrimPrefix(s.URL, "http")
 	ws, _, err := websocket.DefaultDialer.Dial(u, nil)
