@@ -20,12 +20,12 @@ var upgrader = websocket.Upgrader{
 
 var socket *websocket.Conn
 
-func wsHandler(watcher *fsnotify.Watcher) http.Handler {
+func wsHandler(watcher *fsnotify.Watcher, filename string) http.Handler {
 	reload := make(chan bool, 1)
 	errorChan := make(chan error)
 	done := make(chan interface{})
 
-	go watch(done, errorChan, reload, watcher)
+	go watch(done, errorChan, reload, watcher, filename)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var err error
