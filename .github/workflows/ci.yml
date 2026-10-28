@@ -24,6 +24,9 @@ jobs:
       - run: go build ./...
       - run: go vet ./...
       - run: go test ./...
+        env:
+          # The tests render markdown through `gh api /markdown`.
+          GH_TOKEN: ${{ github.token }}
 
   fmt:
     name: gofmt
