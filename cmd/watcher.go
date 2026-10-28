@@ -1,15 +1,25 @@
 package cmd
 
 import (
-	"regexp"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 )
 
-const ignorePattern = `\.swp$|~$|^\.DS_Store$|^4913$`
 const lockTime = 100 * time.Millisecond
+
+var reloadExts = map[string]bool{
+	".md":   true,
+	".png":  true,
+	".jpg":  true,
+	".jpeg": true,
+	".gif":  true,
+	".svg":  true,
+	".webp": true,
+}
 
 var watchedDirs sync.Map
 
@@ -43,7 +53,17 @@ func watchDir(watcher *fsnotify.Watcher, dir string) {
 	logInfo("Watching %s/ for changes", dir)
 }
 
-func watch(done <-chan interface{}, errorChan chan<- error, reload chan<- bool, watcher *fsnotify.Watcher) {
+// shouldReload reports whether name is the previewed file, a markdown file
+// that may be opened via a link, or an image. Changes to other files, such as
+// a log file this command's output is redirected to, do not affect the preview.
+func shouldReload(name, filename string) bool {
+	if filename != "" && filepath.Clean(name) == filepath.Clean(filename) {
+		return true
+	}
+	return reloadExts[strings.ToLower(filepath.Ext(name))]
+}
+
+func watch(done <-chan interface{}, errorChan chan<- error, reload chan<- bool, watcher *fsnotify.Watcher, filename string) {
 	isLocked := false
 	for {
 		select {
@@ -52,8 +72,7 @@ func watch(done <-chan interface{}, errorChan chan<- error, reload chan<- bool, 
 				break
 			}
 			if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
-				r := regexp.MustCompile(ignorePattern)
-				if r.MatchString(event.Name) {
+				if !shouldReload(event.Name, filename) {
 					logDebug("Debug [ignore]: `%s`", event.Name)
 				} else {
 					logInfo("Change detected in %s, refreshing", event.Name)
