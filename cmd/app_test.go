@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -13,7 +14,7 @@ func TestTargetFile(t *testing.T) {
 	}{
 		{"../testdata/markdown-demo.md", "../testdata/markdown-demo.md"},
 		{"../README.md", "../README.md"},
-		{"../", "../README.md"},
+		{"../", filepath.Join("..", "README.md")},
 	}
 	for _, tt := range tests {
 		actual, err := targetFile(tt.input)
@@ -37,12 +38,12 @@ func TestTargetFile(t *testing.T) {
 
 func TestFindReadme(t *testing.T) {
 	actual, _ := findReadme("../")
-	expected := "../README.md"
+	expected := filepath.Join("..", "README.md")
 	if actual != expected {
 		t.Errorf("got %v\n want %v", actual, expected)
 	}
 	actual, _ = findReadme("../testdata")
-	expected = "../testdata/README"
+	expected = filepath.Join("..", "testdata", "README")
 	if actual != expected {
 		t.Errorf("got %v\n want %v", actual, expected)
 	}
