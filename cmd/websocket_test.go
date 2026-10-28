@@ -44,7 +44,13 @@ func TestWriter(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
+	// Flush the write so that Windows reports the change immediately
+	// instead of when the file is eventually closed.
+	if err := testFile.Sync(); err != nil {
+		t.Fatalf("%v", err)
+	}
 
+	_ = ws.SetReadDeadline(time.Now().Add(10 * time.Second))
 	_, p, err := ws.ReadMessage()
 	if err != nil {
 		t.Fatalf("%v", err)
