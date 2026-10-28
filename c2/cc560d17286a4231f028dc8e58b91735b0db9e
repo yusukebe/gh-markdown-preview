@@ -1,0 +1,21 @@
+cmd/app_test.go
+  s_81de63c3e8824a::t_b5205488de6478 4,17,41,46
+cmd/websocket_test.go
+  s_81de63c3e8824a::t_067ff07e07c43c 47-51,53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c2cc560d17286a4231f028dc8e58b91735b0db9e",
+  "prompts": {},
+  "sessions": {
+    "s_81de63c3e8824a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b813750a-ac2f-4cda-ba5a-a6dc51abf3f2",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Yusuke Wada <yusuke@kamawada.com>"
+    }
+  }
+}
