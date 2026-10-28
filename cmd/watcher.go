@@ -11,6 +11,16 @@ import (
 
 const lockTime = 100 * time.Millisecond
 
+var reloadExts = map[string]bool{
+	".md":   true,
+	".png":  true,
+	".jpg":  true,
+	".jpeg": true,
+	".gif":  true,
+	".svg":  true,
+	".webp": true,
+}
+
 var watchedDirs sync.Map
 
 func createWatcher(dir string) (*fsnotify.Watcher, error) {
@@ -43,14 +53,14 @@ func watchDir(watcher *fsnotify.Watcher, dir string) {
 	logInfo("Watching %s/ for changes", dir)
 }
 
-// shouldReload reports whether name is the previewed file or a markdown file
-// that may be opened via a link. Changes to other files, such as a log file
-// this command's output is redirected to, do not affect the preview.
+// shouldReload reports whether name is the previewed file, a markdown file
+// that may be opened via a link, or an image. Changes to other files, such as
+// a log file this command's output is redirected to, do not affect the preview.
 func shouldReload(name, filename string) bool {
 	if filename != "" && filepath.Clean(name) == filepath.Clean(filename) {
 		return true
 	}
-	return strings.HasSuffix(name, ".md")
+	return reloadExts[strings.ToLower(filepath.Ext(name))]
 }
 
 func watch(done <-chan interface{}, errorChan chan<- error, reload chan<- bool, watcher *fsnotify.Watcher, filename string) {
