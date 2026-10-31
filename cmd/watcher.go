@@ -63,11 +63,17 @@ func shouldReload(name, filename string) bool {
 	return reloadExts[strings.ToLower(filepath.Ext(name))]
 }
 
-func watch(done <-chan interface{}, errorChan chan<- error, reload chan<- bool, watcher *fsnotify.Watcher, filename string) {
+// watch calls notify for every change that should reload the preview, until
+// the watcher is closed. Errors are only logged: they must not stop live
+// reloading.
+func watch(watcher *fsnotify.Watcher, filename string, notify func(notification)) {
 	isLocked := false
 	for {
 		select {
-		case event := <-watcher.Events:
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return
+			}
 			if isLocked {
 				break
 			}
@@ -77,7 +83,7 @@ func watch(done <-chan interface{}, errorChan chan<- error, reload chan<- bool, 
 				} else {
 					logInfo("Change detected in %s, refreshing", event.Name)
 					isLocked = true
-					reload <- true
+					notify(notifyReload)
 					timer := time.NewTimer(lockTime)
 					go func() {
 						<-timer.C
@@ -85,10 +91,11 @@ func watch(done <-chan interface{}, errorChan chan<- error, reload chan<- bool, 
 					}()
 				}
 			}
-		case err := <-watcher.Errors:
-			errorChan <- err
-		case <-done:
-			return
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return
+			}
+			logInfo("Warn: %v", err)
 		}
 	}
 }
