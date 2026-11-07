@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -9,8 +10,10 @@ import (
 )
 
 const (
-	pongWait   = 60 * time.Second
-	pingPeriod = (pongWait * 9) / 10
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
+	maxMessageSize = 512
 )
 
 var upgrader = websocket.Upgrader{
@@ -18,68 +21,142 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-var socket *websocket.Conn
-
-func wsHandler(watcher *fsnotify.Watcher, filename string) http.Handler {
-	reload := make(chan bool, 1)
-	errorChan := make(chan error)
-	done := make(chan interface{})
-
-	go watch(done, errorChan, reload, watcher, filename)
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		socket, err = upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			if _, ok := err.(websocket.HandshakeError); !ok {
-				logDebug("Debug [handshake error]: %s", err)
-			}
-			return
-		}
-		socket.SetReadDeadline(time.Now().Add(pongWait))
-		socket.SetPongHandler(func(string) error { socket.SetReadDeadline(time.Now().Add(pongWait)); return nil })
-
-		go wsReader(done, errorChan)
-		go wsWriter(done, errorChan, reload)
-
-		err = <-errorChan
-		close(done)
-		logInfo("Close WebSocket: %v\n", err)
-		socket.Close()
-	})
+// client is one WebSocket connection.
+type client struct {
+	mu      sync.Mutex
+	pending bool          // a reload has not been sent yet; repeated reloads are merged
+	wake    chan struct{} // capacity 1: one wake-up covers everything pending
+	done    chan struct{}
 }
 
-func wsReader(done <-chan interface{}, errorChan chan<- error) {
-	for range done {
-		_, _, err := socket.ReadMessage()
-		if err != nil {
-			logDebug("Debug [read message]: %s", err)
-			errorChan <- err
-		}
+func newClient() *client {
+	return &client{wake: make(chan struct{}, 1), done: make(chan struct{})}
+}
+
+// notify marks a reload as pending and wakes the writer. It never blocks.
+func (c *client) notify() {
+	c.mu.Lock()
+	c.pending = true
+	c.mu.Unlock()
+	select {
+	case c.wake <- struct{}{}:
+	default:
 	}
 }
 
-func wsWriter(done <-chan interface{}, errChan chan<- error, reload <-chan bool) {
+func (c *client) take() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	p := c.pending
+	c.pending = false
+	return p
+}
+
+// run is the only writer of the connection. It calls send when a reload is
+// pending, and ping every pingPeriod, until done is closed or a write fails.
+// A failed ping also ends it: the connection is dead, so it is closed rather
+// than kept registered.
+func (c *client) run(send func() error, ping func() error) {
 	ticker := time.NewTicker(pingPeriod)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-reload:
-			err := socket.WriteMessage(websocket.TextMessage, []byte("reload"))
-			if err != nil {
-				logDebug("Debug [reload error]: %v", err)
-				errChan <- err
+		case <-c.wake:
+			if c.take() {
+				if err := send(); err != nil {
+					logDebug("Debug [reload error]: %v", err)
+					return
+				}
 			}
 		case <-ticker.C:
 			logDebug("Debug [ping send]: ping to client")
-			err := socket.WriteMessage(websocket.PingMessage, []byte{})
-			if err != nil {
+			if err := ping(); err != nil {
 				logDebug("Debug [ping error]: %v", err)
-				// Do nothing
+				return
 			}
-		case <-done:
+		case <-c.done:
 			return
 		}
 	}
+}
+
+// hub keeps the connected clients and notifies every one of them.
+type hub struct {
+	mu      sync.Mutex
+	clients map[*client]struct{}
+}
+
+func newHub() *hub {
+	return &hub{clients: make(map[*client]struct{})}
+}
+
+func (h *hub) add(c *client) {
+	h.mu.Lock()
+	h.clients[c] = struct{}{}
+	h.mu.Unlock()
+}
+
+func (h *hub) remove(c *client) {
+	h.mu.Lock()
+	delete(h.clients, c)
+	h.mu.Unlock()
+}
+
+func (h *hub) notify() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for c := range h.clients {
+		c.notify()
+	}
+}
+
+func wsHandler(watcher *fsnotify.Watcher, filename string) http.Handler {
+	h := newHub()
+	go watch(watcher, filename, h.notify)
+	return h
+}
+
+func (h *hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Register before the handshake completes, so that a change made right
+	// after the page has connected is not missed.
+	c := newClient()
+	h.add(c)
+	defer h.remove(c)
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		// Upgrade has already replied with an HTTP error.
+		if _, ok := err.(websocket.HandshakeError); !ok {
+			logDebug("Debug [handshake error]: %s", err)
+		}
+		return
+	}
+
+	stopped := make(chan struct{})
+	go func() {
+		defer close(stopped)
+		c.run(func() error {
+			conn.SetWriteDeadline(time.Now().Add(writeWait))
+			return conn.WriteMessage(websocket.TextMessage, []byte("reload"))
+		}, func() error {
+			return conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(writeWait))
+		})
+		// After a failed write, this makes the read loop below return.
+		conn.Close()
+	}()
+
+	// Reading is what answers the client's close frame and handles pongs.
+	conn.SetReadLimit(maxMessageSize)
+	conn.SetReadDeadline(time.Now().Add(pongWait))
+	conn.SetPongHandler(func(string) error { return conn.SetReadDeadline(time.Now().Add(pongWait)) })
+	for {
+		if _, _, err := conn.ReadMessage(); err != nil {
+			logInfo("Close WebSocket: %v", err)
+			break
+		}
+	}
+	close(c.done)
+	conn.Close()
+	<-stopped
 }
