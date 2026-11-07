@@ -1,0 +1,21 @@
+cmd/server.go
+  s_9b9f972bdf4fbe::t_54824836592839 22-23,128
+cmd/template.html
+  s_9b9f972bdf4fbe::t_2c5528f344df26 147-148,300
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d1c62b9ae9f5ab3d64b929e8d1256d6e6c8401e8",
+  "prompts": {},
+  "sessions": {
+    "s_9b9f972bdf4fbe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2bef9a86-9582-4702-a3c5-b4544abe99d9",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Yusuke Wada <yusuke@kamawada.com>"
+    }
+  }
+}
