@@ -1,0 +1,25 @@
+cmd/watcher.go
+  s_9b9f972bdf4fbe::t_ac9c6c1cbdfa06 69,86
+cmd/watcher_test.go
+  s_9b9f972bdf4fbe::t_8552a61807f75e 40,44,50
+cmd/websocket.go
+  s_9b9f972bdf4fbe::t_5cb9ebd1c7e674 27,36-37,39,47,50-52,55-59,66-67,106,110,139,155
+cmd/websocket_test.go
+  s_9b9f972bdf4fbe::t_21d00611d9d436 247,250,261,269-270,285-287,289,292-297,311,317-320,333,344,354-360
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c79c8f7dff4a78d2e84e21ff73dc8a6d09de1cdc",
+  "prompts": {},
+  "sessions": {
+    "s_9b9f972bdf4fbe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2bef9a86-9582-4702-a3c5-b4544abe99d9",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Yusuke Wada <yusuke@kamawada.com>"
+    }
+  }
+}
