@@ -15,11 +15,13 @@ import (
 )
 
 func TestWriter(t *testing.T) {
-	testFile, err := os.CreateTemp("", "markdown-preview-test")
+	// Watch a dedicated directory, not the system temp dir, which can't be
+	// watched on some platforms (e.g. macOS).
+	testFile, err := os.CreateTemp(t.TempDir(), "markdown-preview-test")
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	defer os.Remove(testFile.Name())
+	defer testFile.Close()
 
 	_, _ = testFile.Write([]byte("BEFORE.\n"))
 	dir := filepath.Dir(testFile.Name())
