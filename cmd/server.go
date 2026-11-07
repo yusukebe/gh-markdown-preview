@@ -150,6 +150,7 @@ func mdResponse(w http.ResponseWriter, filename string, param *Param) {
 
 	html, err := toHTML(markdown, param)
 	if err != nil {
+		logInfo("Error: failed to render markdown: %v", err)
 		http.Error(w, err.Error(), 500)
 		return
 	}
