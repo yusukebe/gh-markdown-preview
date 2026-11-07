@@ -71,6 +71,17 @@
         margin: 0 auto;
         padding: 45px;
       }
+      #render-error {
+        box-sizing: border-box;
+        max-width: 920px;
+        margin: 16px auto 0;
+        padding: 8px 16px;
+        border: 1px solid #da3633;
+        border-radius: 6px;
+        color: #da3633;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+        white-space: pre-wrap;
+      }
       .copy-button {
         background-color: transparent;
         border: none;
@@ -129,6 +140,8 @@
     </style>
   </head>
   <body>
+    <div id="render-error" hidden></div>
+    <article id="markdown-body" class="markdown-body{{ if .MarkdownMode }} tex2jax_process{{ end }}"></article>
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
       MathJax = {
@@ -157,10 +170,61 @@
       src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"
     ></script>
     <script type="text/javascript">
+      const copyIcon= `<svg class="copy-icon" aria-hidden="true" fill="none" height="18" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18" style="color:"currentColor";"><path d="M8 17.929H6c-1.105 0-2-.912-2-2.036V5.036C4 3.91 4.895 3 6 3h8c1.105 0 2 .911 2 2.036v1.866m-6 .17h8c1.105 0 2 .91 2 2.035v10.857C20 21.09 19.105 22 18 22h-8c-1.105 0-2-.911-2-2.036V9.107c0-1.124.895-2.036 2-2.036z"></path></svg>`;
+      const tickIcon = `<svg class="tick-icon" aria-hidden="true" fill="none" height="18" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18" style="color: "currentColor";"><path d="M5 13l4 4L19 7"></path></svg>`;
+
+      // The mermaid script comes after this one, so it may not have loaded
+      // yet when the content arrives, or it may fail to load at all.
+      function renderMermaid() {
+        if (!window.mermaid) {
+          return;
+        }
+        {{ if eq .Mode "dark" }}
+          const mermaidJsTheme = 'dark';
+        {{ else if eq .Mode "light" }}
+          const mermaidJsTheme = 'default';
+        {{ else }}
+          const mermaidJsTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
+        {{ end }}
+        mermaid.initialize({ startOnLoad: false, theme: mermaidJsTheme });
+
+        $('div.highlight-source-mermaid > pre').each(async function(i, pre) {
+          // renderMermaid can run more than once for the same content.
+          if ($(pre).data('original-text') !== undefined) {
+            return;
+          }
+          const originalText = pre.textContent;
+          // Store original text for copy functionality
+          $(pre).data('original-text', originalText);
+          const id = 'mermaid-diagram-' + i;
+          try {
+            const { svg } = await mermaid.render(id, originalText);
+            $(pre).html(svg);
+            // Add copy button after rendering
+            const button = $(`<button class="copy-button" aria-label="Copy mermaid code to clipboard">${copyIcon}</button>`);
+            $(pre).css("position", "relative").append(button);
+            button.on('click', function () {
+              navigator.clipboard.writeText(originalText).then(function () {
+                button.html(tickIcon);
+                setTimeout(() => {
+                  button.html(copyIcon)
+                }, 1000);
+              }, function () {
+                alert('Failed to copy');
+              });
+            });
+          } catch (error) {
+            console.error('Mermaid rendering error:', error);
+            $(pre).html('<div style="color: red;">Error rendering diagram</div>');
+          }
+        });
+      }
+
       function loadmd() {
         $.ajax({
           url: "/__/md?path=" + window.location.pathname.slice(1),
           success: function (result) {
+            $("#render-error").prop("hidden", true);
             $("#markdown-body").html(result).promise().done(function(){
               var count = $("#markdown-body a").length;
               $("#markdown-body a").each(function(i){
@@ -206,43 +270,11 @@
             } else {
               typesetMath();
             }
-            {{ if eq .Mode "dark" }}
-              const mermaidJsTheme = 'dark';
-            {{ else if eq .Mode "light" }}
-              const mermaidJsTheme = 'default';
-            {{ else }}
-              const mermaidJsTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'default';
-            {{ end }}
-            mermaid.initialize({ startOnLoad: false, theme: mermaidJsTheme });
-
-            $('div.highlight-source-mermaid > pre').each(async function(i, pre) {
-              const originalText = pre.textContent;
-              const id = 'mermaid-diagram-' + i;
-              try {
-                const { svg } = await mermaid.render(id, originalText);
-                $(pre).html(svg);
-                // Store original text for copy functionality
-                $(pre).data('original-text', originalText);
-                // Add copy button after rendering
-                const button = $(`<button class="copy-button" aria-label="Copy mermaid code to clipboard">${copyIcon}</button>`);
-                $(pre).css("position", "relative").append(button);
-                button.on('click', function () {
-                  navigator.clipboard.writeText(originalText).then(function () {
-                    button.html(tickIcon);
-                    setTimeout(() => {
-                      button.html(copyIcon)
-                    }, 1000);
-                  }, function () {
-                    alert('Failed to copy');
-                  });
-                });
-              } catch (error) {
-                console.error('Mermaid rendering error:', error);
-                $(pre).html('<div style="color: red;">Error rendering diagram</div>');
-              }
-            });
-              const copyIcon= `<svg class="copy-icon" aria-hidden="true" fill="none" height="18" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18" style="color:"currentColor";"><path d="M8 17.929H6c-1.105 0-2-.912-2-2.036V5.036C4 3.91 4.895 3 6 3h8c1.105 0 2 .911 2 2.036v1.866m-6 .17h8c1.105 0 2 .91 2 2.035v10.857C20 21.09 19.105 22 18 22h-8c-1.105 0-2-.911-2-2.036V9.107c0-1.124.895-2.036 2-2.036z"></path></svg>`;
-              const tickIcon = `<svg class="tick-icon" aria-hidden="true" fill="none" height="18" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="18" style="color: "currentColor";"><path d="M5 13l4 4L19 7"></path></svg>`;
+            if (window.mermaid) {
+              renderMermaid();
+            } else {
+              window.addEventListener('load', renderMermaid, { once: true });
+            }
               $('.markdown-body pre').each(function () {
                 const pre = $(this);
                 // Skip if this is a Mermaid diagram (already has copy button)
@@ -266,7 +298,11 @@
                   });
                 });
               });
-          })}
+          })},
+          error: function (xhr) {
+            // Keep the content that is shown and say why it was not updated.
+            $("#render-error").text(xhr.responseText || xhr.statusText).prop("hidden", false);
+          }
         })
       };
       (function () {
@@ -297,6 +333,5 @@
       type="text/javascript"
       src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.3.0/mermaid.min.js"
     ></script>
-    <article id="markdown-body" class="markdown-body{{ if .MarkdownMode }} tex2jax_process{{ end }}"></article>
   </body>
 </html>
