@@ -144,8 +144,8 @@
         },
         options: {
           // Only typeset what GitHub marks as math, so that other dollar signs
-          // stay plain text as on github.com. typesetMath falls back to the
-          // whole body when nothing is marked (--markdown-mode).
+          // stay plain text as on github.com. With --markdown-mode GitHub marks
+          // no math, so the body itself is processed (see the article below).
           ignoreHtmlClass: 'markdown-body',
           processHtmlClass: 'js-inline-math|js-display-math|tex2jax_process',
         },
@@ -182,10 +182,6 @@
               if (!markdownBody) {
                 return;
               }
-
-              // With --markdown-mode GitHub marks no math, so let MathJax look
-              // for it in the whole body, as before.
-              markdownBody.classList.toggle("tex2jax_process", !markdownBody.querySelector("math-renderer"));
 
               if (!window.MathJax || (!MathJax.typesetPromise && !MathJax.typeset)) {
                 if (retries > 0) {
@@ -301,6 +297,6 @@
       type="text/javascript"
       src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.3.0/mermaid.min.js"
     ></script>
-    <article id="markdown-body" class="markdown-body"></article>
+    <article id="markdown-body" class="markdown-body{{ if .MarkdownMode }} tex2jax_process{{ end }}"></article>
   </body>
 </html>

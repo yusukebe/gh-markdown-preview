@@ -19,6 +19,8 @@ type TemplateParam struct {
 	Host   string
 	Reload bool
 	Mode   string
+	// MarkdownMode is true with --markdown-mode, where GitHub marks no math.
+	MarkdownMode bool
 }
 
 type Server struct {
@@ -123,7 +125,7 @@ func handler(filename string, param *Param, h http.Handler, watcher *fsnotify.Wa
 		title := getTitle(target)
 		modeString := getModeString(param.forceLightMode, param.forceDarkMode)
 
-		param := TemplateParam{Title: title, Host: r.Host, Reload: param.reload, Mode: modeString}
+		param := TemplateParam{Title: title, Host: r.Host, Reload: param.reload, Mode: modeString, MarkdownMode: param.markdownMode}
 		tmpl.Execute(w, param)
 	})
 }
