@@ -1,0 +1,19 @@
+cmd/websocket_test.go
+  s_9b9f972bdf4fbe::t_efb01d2e2ddf0f 18-20,24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "70dc280028b9da81dbaf5f84ff88aee532c12ddb",
+  "prompts": {},
+  "sessions": {
+    "s_9b9f972bdf4fbe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2bef9a86-9582-4702-a3c5-b4544abe99d9",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "Yusuke Wada <yusuke@kamawada.com>"
+    }
+  }
+}
