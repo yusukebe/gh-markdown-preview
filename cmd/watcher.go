@@ -66,7 +66,7 @@ func shouldReload(name, filename string) bool {
 // watch calls notify for every change that should reload the preview, until
 // the watcher is closed. Errors are only logged: they must not stop live
 // reloading.
-func watch(watcher *fsnotify.Watcher, filename string, notify func(notification)) {
+func watch(watcher *fsnotify.Watcher, filename string, notify func()) {
 	isLocked := false
 	for {
 		select {
@@ -83,7 +83,7 @@ func watch(watcher *fsnotify.Watcher, filename string, notify func(notification)
 				} else {
 					logInfo("Change detected in %s, refreshing", event.Name)
 					isLocked = true
-					notify(notifyReload)
+					notify()
 					timer := time.NewTimer(lockTime)
 					go func() {
 						<-timer.C

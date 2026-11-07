@@ -37,20 +37,17 @@ func TestShouldReload(t *testing.T) {
 
 func TestWatchKeepsGoingAfterError(t *testing.T) {
 	watcher := &fsnotify.Watcher{Events: make(chan fsnotify.Event), Errors: make(chan error)}
-	notified := make(chan notification, 1)
+	notified := make(chan struct{}, 1)
 	returned := make(chan struct{})
 	go func() {
 		defer close(returned)
-		watch(watcher, "README.md", func(n notification) { notified <- n })
+		watch(watcher, "README.md", func() { notified <- struct{}{} })
 	}()
 
 	watcher.Errors <- errors.New("event queue overflow")
 	watcher.Events <- fsnotify.Event{Name: "README.md", Op: fsnotify.Write}
 	select {
-	case n := <-notified:
-		if n != notifyReload {
-			t.Errorf("got %b, want %b", n, notifyReload)
-		}
+	case <-notified:
 	case <-time.After(5 * time.Second):
 		t.Fatal("a change after a watcher error was not notified")
 	}

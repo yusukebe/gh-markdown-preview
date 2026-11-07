@@ -21,16 +21,10 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-// notification is a set of notification kinds, so that the notifications a
-// slow client has not received yet are merged instead of dropped.
-type notification uint8
-
-const notifyReload notification = 1 << iota
-
 // client is one WebSocket connection.
 type client struct {
 	mu      sync.Mutex
-	pending notification
+	pending bool          // a reload has not been sent yet; repeated reloads are merged
 	wake    chan struct{} // capacity 1: one wake-up covers everything pending
 	done    chan struct{}
 }
@@ -39,11 +33,10 @@ func newClient() *client {
 	return &client{wake: make(chan struct{}, 1), done: make(chan struct{})}
 }
 
-// notify adds n to the pending notifications and wakes the writer. It never
-// blocks.
-func (c *client) notify(n notification) {
+// notify marks a reload as pending and wakes the writer. It never blocks.
+func (c *client) notify() {
 	c.mu.Lock()
-	c.pending |= n
+	c.pending = true
 	c.mu.Unlock()
 	select {
 	case c.wake <- struct{}{}:
@@ -51,26 +44,27 @@ func (c *client) notify(n notification) {
 	}
 }
 
-func (c *client) take() notification {
+func (c *client) take() bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	n := c.pending
-	c.pending = 0
-	return n
+	p := c.pending
+	c.pending = false
+	return p
 }
 
-// run is the only writer of the connection. It sends the pending
-// notifications, and a ping every pingPeriod, until done is closed or a write
-// fails.
-func (c *client) run(send func(notification) error, ping func() error) {
+// run is the only writer of the connection. It calls send when a reload is
+// pending, and ping every pingPeriod, until done is closed or a write fails.
+// A failed ping also ends it: the connection is dead, so it is closed rather
+// than kept registered.
+func (c *client) run(send func() error, ping func() error) {
 	ticker := time.NewTicker(pingPeriod)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-c.wake:
-			if n := c.take(); n != 0 {
-				if err := send(n); err != nil {
+			if c.take() {
+				if err := send(); err != nil {
 					logDebug("Debug [reload error]: %v", err)
 					return
 				}
@@ -109,11 +103,11 @@ func (h *hub) remove(c *client) {
 	h.mu.Unlock()
 }
 
-func (h *hub) notify(n notification) {
+func (h *hub) notify() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	for c := range h.clients {
-		c.notify(n)
+		c.notify()
 	}
 }
 
@@ -142,7 +136,7 @@ func (h *hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stopped := make(chan struct{})
 	go func() {
 		defer close(stopped)
-		c.run(func(notification) error {
+		c.run(func() error {
 			conn.SetWriteDeadline(time.Now().Add(writeWait))
 			return conn.WriteMessage(websocket.TextMessage, []byte("reload"))
 		}, func() error {
@@ -158,7 +152,7 @@ func (h *hub) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	conn.SetPongHandler(func(string) error { return conn.SetReadDeadline(time.Now().Add(pongWait)) })
 	for {
 		if _, _, err := conn.ReadMessage(); err != nil {
-			logInfo("Close WebSocket: %v\n", err)
+			logInfo("Close WebSocket: %v", err)
 			break
 		}
 	}

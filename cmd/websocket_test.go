@@ -244,14 +244,12 @@ func TestClosedClientsAreRemoved(t *testing.T) {
 	}
 }
 
-func receiveNotification(t *testing.T, sent <-chan notification) notification {
+func receiveNotification(t *testing.T, sent <-chan struct{}) {
 	t.Helper()
 	select {
-	case n := <-sent:
-		return n
+	case <-sent:
 	case <-time.After(5 * time.Second):
 		t.Fatal("no notification was sent")
-		return 0
 	}
 }
 
@@ -260,7 +258,7 @@ func TestHubCoalescesPendingNotifications(t *testing.T) {
 	c := newClient()
 	h.add(c)
 
-	sent := make(chan notification, 10)
+	sent := make(chan struct{}, 10)
 	release := make(chan struct{})
 	var releaseOnce sync.Once
 	unblock := func() { releaseOnce.Do(func() { close(release) }) }
@@ -268,8 +266,8 @@ func TestHubCoalescesPendingNotifications(t *testing.T) {
 	held := false
 	go func() {
 		defer close(stopped)
-		c.run(func(n notification) error {
-			sent <- n
+		c.run(func() error {
+			sent <- struct{}{}
 			if !held {
 				// Hold the first send, like a client that is slow to read.
 				held = true
@@ -284,29 +282,24 @@ func TestHubCoalescesPendingNotifications(t *testing.T) {
 		<-stopped
 	}()
 
-	h.notify(notifyReload)
-	if n := receiveNotification(t, sent); n != notifyReload {
-		t.Fatalf("first send: got %b, want %b", n, notifyReload)
-	}
-	// The writer is busy now, so these must be merged, not dropped.
+	h.notify()
+	receiveNotification(t, sent)
+	// The writer is busy now, so these must be merged into one, not dropped.
 	for i := 0; i < 5; i++ {
-		h.notify(notifyReload)
+		h.notify()
 	}
 	unblock()
-	if n := receiveNotification(t, sent); n != notifyReload {
-		t.Fatalf("after the slow send: got %b, want %b", n, notifyReload)
-	}
-	// Nothing else is pending: the next send carries only the next notification.
-	const next notification = 1 << 7
-	h.notify(next)
-	if n := receiveNotification(t, sent); n != next {
-		t.Fatalf("got %b, want only %b: merged notifications were sent more than once", n, next)
+	receiveNotification(t, sent)
+	// Nothing else is pending: the merged notifications are sent only once.
+	select {
+	case <-sent:
+		t.Fatal("merged notifications were sent more than once")
+	case <-time.After(200 * time.Millisecond):
 	}
 }
 
 func TestHubConcurrentUse(t *testing.T) {
 	h := newHub()
-	const marker notification = 1 << 7
 	nop := func() error { return nil }
 	var writers sync.WaitGroup
 
@@ -315,15 +308,16 @@ func TestHubConcurrentUse(t *testing.T) {
 	reached := make([]chan struct{}, len(stayed))
 	for i := range stayed {
 		c := newClient()
-		got := make(chan struct{})
+		got := make(chan struct{}, 1)
 		stayed[i], reached[i] = c, got
 		h.add(c)
 		writers.Add(1)
 		go func() {
 			defer writers.Done()
-			c.run(func(n notification) error {
-				if n&marker != 0 {
-					close(got)
+			c.run(func() error {
+				select {
+				case got <- struct{}{}:
+				default:
 				}
 				return nil
 			}, nop)
@@ -336,7 +330,7 @@ func TestHubConcurrentUse(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < 100; j++ {
-				h.notify(notifyReload)
+				h.notify()
 			}
 		}()
 		go func() {
@@ -347,7 +341,7 @@ func TestHubConcurrentUse(t *testing.T) {
 				writers.Add(1)
 				go func() {
 					defer writers.Done()
-					c.run(func(notification) error { return nil }, nop)
+					c.run(func() error { return nil }, nop)
 				}()
 				h.remove(c)
 				close(c.done)
@@ -357,7 +351,13 @@ func TestHubConcurrentUse(t *testing.T) {
 	wg.Wait()
 
 	// Every client that stayed must still get a notification sent afterwards.
-	h.notify(marker)
+	for _, got := range reached {
+		select {
+		case <-got:
+		default:
+		}
+	}
+	h.notify()
 	for i, got := range reached {
 		select {
 		case <-got:
