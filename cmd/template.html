@@ -142,6 +142,13 @@
             ['\\[', '\\]'],
           ],
         },
+        options: {
+          // Only typeset what GitHub marks as math, so that other dollar signs
+          // stay plain text as on github.com. typesetMath falls back to the
+          // whole body when nothing is marked (--markdown-mode).
+          ignoreHtmlClass: 'markdown-body',
+          processHtmlClass: 'js-inline-math|js-display-math|tex2jax_process',
+        },
       }
     </script>
     <script
@@ -175,6 +182,10 @@
               if (!markdownBody) {
                 return;
               }
+
+              // With --markdown-mode GitHub marks no math, so let MathJax look
+              // for it in the whole body, as before.
+              markdownBody.classList.toggle("tex2jax_process", !markdownBody.querySelector("math-renderer"));
 
               if (!window.MathJax || (!MathJax.typesetPromise && !MathJax.typeset)) {
                 if (retries > 0) {
