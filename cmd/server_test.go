@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -126,6 +128,34 @@ func TestMdHandlerMissingFile(t *testing.T) {
 	body, _ := io.ReadAll(res.Body)
 	if strings.Contains(string(body), "testdata") {
 		t.Errorf("404 response should not include the file path, got: %s", body)
+	}
+}
+
+func TestMdHandlerRenderError(t *testing.T) {
+	// Without gh on PATH, rendering fails.
+	t.Setenv("PATH", t.TempDir())
+	var logs bytes.Buffer
+	prev := log.Writer()
+	log.SetOutput(&logs)
+	t.Cleanup(func() { log.SetOutput(prev) })
+
+	ts := httptest.NewServer(mdHandler("../testdata/markdown-demo.md", &Param{}))
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL)
+	if err != nil {
+		t.Fatalf("unexpected: %v\n", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusInternalServerError {
+		t.Errorf("server status error, got: %v", res.StatusCode)
+	}
+	body, _ := io.ReadAll(res.Body)
+	if !strings.Contains(string(body), "could not find gh") {
+		t.Errorf("the response should say why rendering failed, got: %s", body)
+	}
+	if !strings.Contains(logs.String(), "could not find gh") {
+		t.Errorf("the log should say why rendering failed, got: %q", logs.String())
 	}
 }
 
