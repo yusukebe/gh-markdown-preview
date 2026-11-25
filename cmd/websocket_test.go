@@ -158,7 +158,7 @@ func TestReloadSurvivesClosedClient(t *testing.T) {
 	_ = closed.Close()
 	for i := 0; i < 3; i++ {
 		_ = os.WriteFile(file, []byte(fmt.Sprintf("edit %d\n", i)), 0o644)
-		time.Sleep(2 * lockTime)
+		time.Sleep(2 * debounceTime)
 	}
 
 	reopened := dialWS(t, url)

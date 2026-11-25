@@ -9,7 +9,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-const lockTime = 100 * time.Millisecond
+const debounceTime = 100 * time.Millisecond
 
 var reloadExts = map[string]bool{
 	".md":   true,
@@ -63,34 +63,37 @@ func shouldReload(name, filename string) bool {
 	return reloadExts[strings.ToLower(filepath.Ext(name))]
 }
 
-// watch calls notify for every change that should reload the preview, until
-// the watcher is closed. Errors are only logged: they must not stop live
-// reloading.
+// watch calls notify once the files have been quiet for debounceTime after a
+// change that should reload the preview. So every change is followed by a
+// reload, and quick successive writes, such as a save and a formatter, give
+// one. It returns when the watcher is closed. Errors are only logged: they must
+// not stop live reloading.
 func watch(watcher *fsnotify.Watcher, filename string, notify func()) {
-	isLocked := false
+	var timer *time.Timer
+	var fire <-chan time.Time // nil while no change is pending
+	var changed string
 	for {
 		select {
 		case event, ok := <-watcher.Events:
 			if !ok {
 				return
 			}
-			if isLocked {
-				break
-			}
 			if event.Op&fsnotify.Write == fsnotify.Write || event.Op&fsnotify.Create == fsnotify.Create {
 				if !shouldReload(event.Name, filename) {
 					logDebug("Debug [ignore]: `%s`", event.Name)
 				} else {
-					logInfo("Change detected in %s, refreshing", event.Name)
-					isLocked = true
-					notify()
-					timer := time.NewTimer(lockTime)
-					go func() {
-						<-timer.C
-						isLocked = false
-					}()
+					changed = event.Name
+					if timer != nil {
+						timer.Stop()
+					}
+					timer = time.NewTimer(debounceTime)
+					fire = timer.C
 				}
 			}
+		case <-fire:
+			fire = nil
+			logInfo("Change detected in %s, refreshing", changed)
+			notify()
 		case err, ok := <-watcher.Errors:
 			if !ok {
 				return
